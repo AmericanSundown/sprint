@@ -14,5 +14,8 @@
     "mori": "0.3.2",
     "react": "0.13.2",
     "superagent": "1.2.0"
+  },
+  "devDependencies": {
+    "tapes": "2.0.0"
   }
 }
