@@ -1,6 +1,6 @@
 import m from 'mori';
 
-class Store {
+class Namespace {
 	constructor() {
 		this._subscribers = m.hashMap();
 		this._data = m.hashMap();
@@ -44,4 +44,4 @@ class Store {
 	}
 }
 
-export default Store;
+export default Namespace;

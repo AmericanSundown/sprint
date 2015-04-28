@@ -1,20 +1,20 @@
 import m from 'mori';
-import Store from './Store';
+import Namespace from './Namespace';
 import server from './server';
 
 const STATE_LOADING = 'loading';
 const STATE_LOADED = 'loaded';
 const STATE_ERROR = 'error';
 
-class ServerStore extends Store {
-	constructor(namespace, loadArity) {
+class ServerNamespace extends Namespace {
+	constructor(namespace, loadArity, saveArity) {
 		super();
 
-		if (!loadArity) { throw "Must specify a load arity"; }
+		if (typeof loadArity != 'number' || typeof saveArity != 'number') { throw "Must specify a load and save arity"; }
 
 		this._namespace = namespace;
-		// From deep to shallow
-		this._loadArity = loadArity.sort(function(a, b) { return b - a; });
+		this._loadArity = loadArity;
+		this._saveArity = saveArity;
 
 		this._cache = m.hashMap();
 		this._loading = m.hashMap();
@@ -36,18 +36,20 @@ class ServerStore extends Store {
 	}
 
 	isLoading(keys) {
-		return this._loadingState(keys) == STATE_LOADING;
+		return m.get(this._loading, this._loaderKeys(keys)) == STATE_LOADING;
 	}
 
 	isError(keys) {
-		return this._loadingState(keys) == STATE_ERROR;
+		return m.get(this._loading, this._loaderKeys(keys)) == STATE_ERROR;
 	}
 
 	_load(keys) {
-		if (this._loadingState(keys)) { return this._loadingState(keys); }
+		if (m.get(this._loading, this._loaderKeys(keys))) { return; }
 
-		var keys_to_load = m.into(m.vector(), m.take(this._loadArity[0], keys));
+		var keys_to_load = this._loaderKeys(keys);
+
 		this._loading = m.assoc(this._loading, keys_to_load, STATE_LOADING);
+
 		server(this._namespace, 'load', { keys: m.toJs(keys_to_load) }).then((value) => {
 			this._loading = m.assoc(this._loading, keys_to_load, STATE_LOADED);
 			this._setCache(keys_to_load, value);
@@ -56,22 +58,19 @@ class ServerStore extends Store {
 		});
 	}
 
-	_loadingState(keys) {
-		var keyCombos = m.map((arity) => {
-			return m.take(arity, keys);
-		}, this._loadArity);
-
-		m.each(keyCombos, (combo) => {
-			if (m.get(this._loading, combo)) {
-				return m.get(this._loading, combo);
-			}
-		});
+	_loaderKeys(keys) {
+		return m.into(m.vector(), m.take(this._loadArity, keys));
 	}
 
 	_setCache(keys, value) {
-		this._cache = m.assocIn(this._cache, keys, value);
+		if (!m.count(keys)) {
+			this._cache = value;
+		}
+		else {
+			this._cache = m.assocIn(this._cache, keys, m.toClj(value));
+		}
 		this._notify(keys);
 	}
 }
 
-export default ServerStore;
+export default ServerNamespace;

@@ -1,10 +1,10 @@
 import test from 'tape';
 import m from 'mori';
-import Store from '../Store';
+import Namespace from '../Namespace';
 
-test('Store', (t) => {
+test('Namespace', (t) => {
 	var s;
-	function setup() { s = new Store(); };
+	function setup() { s = new Namespace(); };
 
 	t.test('basic get and set works', (t) => {
 		setup();

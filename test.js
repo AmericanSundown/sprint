@@ -1,4 +1,4 @@
 require('tape-catch');
 
-require('./test/Store');
-require('./test/ServerStore');
+require('./test/Namespace');
+require('./test/ServerNamespace');
