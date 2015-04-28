@@ -3,15 +3,15 @@ import m from 'mori';
 class Namespace {
 	constructor() {
 		this._subscribers = m.hashMap();
-		this._data = m.hashMap();
+		this._local = m.hashMap();
 	}
 
 	get(keys) {
-		return m.getIn(this._data, keys);
+		return m.getIn(this._local, keys);
 	}
 
 	set(keys, value) {
-		this._data = m.assocIn(this._data, keys, value);
+		this._local = m.assocIn(this._local, keys, value);
 		this._notify(keys);
 	}
 
