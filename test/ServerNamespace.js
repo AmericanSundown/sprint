@@ -11,7 +11,7 @@ test('ServerNamespace loading', (t) => {
 	var s, ServerNamespace;
 
 	t.test('basic get and set works on server', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 2, 2);
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', { action: () => {} }, 2, 2);
 
 		t.ok(m.equals(s.get(), m.hashMap()), 'basic is empty');
 		s.set([ 'a' ], 'b');
@@ -22,32 +22,30 @@ test('ServerNamespace loading', (t) => {
 	});
 
 	t.test("getter doesn't notify", (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 2, 2);
-
 		t.plan(1);
-		s.action = () => { return new B(function() {}); };
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', { action: () => { return new B(function() {}); } }, 2, 2);
+
 		s.subscribe([ 'a', 'b' ], () => { t.ok(true, 'subscription called'); });
 		s.get([ 'a', 'b' ]);
 		t.ok(true, 'passed');
 	});
 
 	t.test('subscribe/notify works on server function - called twice with arty 2', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 2, 2);
-
 		t.plan(8);
-
-		s.subscribe([ 'a' ], () => {
-			// This should execute twice.
-			t.ok(true, 'subscription called');
-		});
-
-		s.action = (call, data) => {
+		var server = { action: (ns, call, data) => {
 			function valid(k) { return m.equals(m.toClj(data.keys), m.toClj([ 'a', k ])); }
 
 			// This should be called twice
 			t.ok(valid('b') || valid('c'), 'correct keys passed in');
 			return B.delay(1).return('abc');
-		};
+		} };
+
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 2, 2);
+
+		s.subscribe([ 'a' ], () => {
+			// This should execute twice.
+			t.ok(true, 'subscription called');
+		});
 
 		t.ok(!s.get([ 'a', 'b' ]), 'not loaded 1');
 		t.ok(!s.get([ 'a', 'c' ]), 'not loaded 2');
@@ -59,16 +57,16 @@ test('ServerNamespace loading', (t) => {
 	});
 
 	t.test('subscribe/notify works on server function - called once with arity 1', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 1, 2);
-
 		t.plan(6);
-		s.subscribe([ 'a' ], () => { t.ok(true, 'subscription called'); });
-
-		s.action = (call, data) => {
+		var server = { action: (ns, call, data) => {
 			t.ok(m.equals(m.toClj(data.keys), m.toClj([ 'a' ])), 'keys correct');
 
 			return B.delay(1).return({ 'b': 1, 'c': 2 });
-		};
+		} };
+
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 2);
+
+		s.subscribe([ 'a' ], () => { t.ok(true, 'subscription called'); });
 
 		t.ok(!s.get([ 'a', 'b' ]), 'not loaded 1');
 		t.ok(!s.get([ 'a', 'c' ]), 'not loaded 2');
@@ -81,13 +79,11 @@ test('ServerNamespace loading', (t) => {
 
 
 	t.test('isLoading works', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 2, 2);
-
 		t.plan(20);
-
-		s.action = (call, data) => {
+		var server = { action: (ns, call, data) => {
 			return B.delay(data.keys[1] == 'b' ? 5 : 10).return({ 'd': 'e' });
-		};
+		} };
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 2, 2);
 
 		function verifyLoadingState(ab, ac, msg) {
 			t.ok(s.isLoading([ 'a', 'b' ]) == ab, msg + ' ab');
@@ -118,20 +114,19 @@ test('ServerNamespace loading', (t) => {
 
 
 
-test('ServerSaving loading', (t) => {
+test('ServerNamespace saving', (t) => {
 	var s, ServerNamespace;
 
 	t.test('basic data type get/save works', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 1, 1);
-
 		t.plan(4);
-
-		s.set([ 'a' ], 'b');
-		s.action = (call, data) => {
+		var server = { action: (ns, call, data) => {
 			t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
 			t.ok(data.value == 'b', 'value is correct');
 			return new B.delay(5).return('c');
-		};
+		} };
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
+
+		s.set([ 'a' ], 'b');
 		s.save([ 'a' ]).then(function() {
 			t.ok(s.get([ 'a' ]) == 'c', 'saved data correct');
 		});
@@ -139,16 +134,16 @@ test('ServerSaving loading', (t) => {
 	});
 
 	t.test('basic data type get/save works with override', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 1, 1);
-
 		t.plan(5);
-
-		s.set([ 'a' ], 'b');
-		s.action = (call, data) => {
+		var server = { action: (ns, call, data) => {
 			t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
 			t.ok(data.value == 'b', 'value is correct');
 			return new B.delay(5).return('c');
-		};
+		} };
+
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
+
+		s.set([ 'a' ], 'b');
 		s.save([ 'a' ]).then(() => {
 			t.ok(s.get([ 'a' ]) == 'd', 'saved data correctly overridden');
 		});
@@ -158,11 +153,8 @@ test('ServerSaving loading', (t) => {
 	});
 
 	t.test('basic data type get/save with error', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 1, 1);
-
 		t.plan(6);
-
-		s.action = (call, data) => {
+		var server = { action: (ns, call, data) => {
 			if (call == 'load') {
 				return B.resolve('a');
 			}
@@ -171,7 +163,9 @@ test('ServerSaving loading', (t) => {
 				t.ok(data.value == 'b', 'value is correct');
 				return new B.delay(5).throw('c');
 			}
-		};
+		} };
+
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
 
 		// Load 'a'
 		s.get([ 'a' ]);
@@ -191,11 +185,8 @@ test('ServerSaving loading', (t) => {
 	});
 
 	t.test('basic data type get/save works with error & override', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 1, 1);
-
 		t.plan(7);
-
-		s.action = (call, data) => {
+		var server = { action: (ns, call, data) => {
 			if (call == 'load') {
 				return B.resolve('a');
 			}
@@ -204,7 +195,9 @@ test('ServerSaving loading', (t) => {
 				t.ok(data.value == 'b', 'value is correct');
 				return new B.delay(5).throw('c');
 			}
-		};
+		} };
+
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
 
 		// Load 'a'
 		s.get([ 'a' ]);
@@ -226,18 +219,18 @@ test('ServerSaving loading', (t) => {
 	});
 
 	t.test('map get/save works', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 1, 1);
-		var d = m.toClj({ 1: 'a', 2: 'b' }),
-			d2 = { 1: 'b', 2: 'c' };
-
 		t.plan(4);
-
-		s.set([ 'a' ], d);
-		s.action = (call, data) => {
+		var server = { action: (ns, call, data) => {
 			t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
 			t.ok(m.equals(m.toClj(data.value), d), 'value is correct');
 			return new B.delay(5).return(d2);
-		};
+		} };
+
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
+		var d = m.toClj({ 1: 'a', 2: 'b' }),
+			d2 = { 1: 'b', 2: 'c' };
+
+		s.set([ 'a' ], d);
 		s.save([ 'a' ]).then(function() {
 			t.ok(m.equals(s.get([ 'a' ]), m.toClj(d2)), 'saved data correct');
 		});
@@ -246,17 +239,16 @@ test('ServerSaving loading', (t) => {
 
 
 	t.test('map get/save works with override', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 1, 1);
-		var d = m.toClj({ "1": 'a', "2": 'b' });
-
 		t.plan(5);
-
-		s.set([ 'a' ], d);
-		s.action = (call, data) => {
+		var server = { action: (ns, call, data) => {
 			t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
 			t.ok(m.equals(m.toClj(data.value), d), 'value is correct');
 			return new B.delay(5).return({ "1": 'b', "2": 'c' });
-		};
+		} };
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
+		var d = m.toClj({ "1": 'a', "2": 'b' });
+
+		s.set([ 'a' ], d);
 		s.save([ 'a' ]).then(() => {
 			t.ok(m.equals(s.get([ 'a' ]), m.toClj({ "1": 'c', "2": 'c' })), 'saved data correctly overridden');
 		});
@@ -267,11 +259,8 @@ test('ServerSaving loading', (t) => {
 	});
 
 	t.test('basic data type get/save with error', (t) => {
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', 1, 1);
-
 		t.plan(6);
-
-		s.action = (call, data) => {
+		var server = { action: (ns, call, data) => {
 			if (call == 'load') {
 				return B.resolve({ "1": "b", "2": "d" });
 			}
@@ -280,7 +269,9 @@ test('ServerSaving loading', (t) => {
 				t.ok(m.equals(m.toClj(data.value), m.toClj({ '1': 'c' })), 'value is correct');
 				return new B.delay(5).throw('c');
 			}
-		};
+		} };
+
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
 
 		// Load 'a'
 		s.get([ 'a' ]);

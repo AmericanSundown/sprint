@@ -1,6 +1,5 @@
 import m from 'mori';
 import Namespace from './Namespace';
-import server from './server';
 
 const STATE_LOADING = 'loading';
 const STATE_LOADED = 'loaded';
@@ -11,7 +10,7 @@ function emptyAssocIn(obj, keys, value) {
 	return m.assocIn(obj, keys, value);
 }
 
-function _isObj(o) {
+function isObj(o) {
 	try {
 		return o !== null && (m.isMap(o) || Object.getPrototypeOf(o) === Object.prototype);
 	}
@@ -19,7 +18,7 @@ function _isObj(o) {
 }
 
 class ServerNamespace extends Namespace {
-	constructor(namespace, loadArity, saveArity) {
+	constructor(namespace, server, loadArity, saveArity) {
 		super();
 
 		if (typeof loadArity != 'number' || typeof saveArity != 'number') { throw "Must specify a load and save arity"; }
@@ -27,6 +26,7 @@ class ServerNamespace extends Namespace {
 		this._namespace = namespace;
 		this._loadArity = loadArity;
 		this._saveArity = saveArity;
+		this._server = server;
 
 		// _data is locally-modified data
 		// _remote is server data
@@ -48,15 +48,15 @@ class ServerNamespace extends Namespace {
 		// Get data from each source.
 		var data;
 		if ((local = m.getIn(this._local, keys)) !== null) {
-			if (!_isObj(local)) { return local; }
+			if (!isObj(local)) { return local; }
 			data = local;
 		}
 		if ((stage = m.getIn(this._stage, keys)) !== null) {
-			if (!data && !_isObj(stage)) { return stage; }
+			if (!data && !isObj(stage)) { return stage; }
 			data = m.merge(stage, data);
 		}
 		if ((remote = m.getIn(this._remote, keys)) !== null) {
-			if (!data && !_isObj(remote)) { return remote; }
+			if (!data && !isObj(remote)) { return remote; }
 			data = m.merge(remote, data);
 		}
 
@@ -83,7 +83,7 @@ class ServerNamespace extends Namespace {
 	}
 
 	action(name, params) {
-		return server(this._namespace, name, m.toJs(params));
+		return this._server.action(this._namespace, name, m.toJs(params));
 	}
 
 	save(keys) {
@@ -125,7 +125,7 @@ class ServerNamespace extends Namespace {
 			var stage = m.getIn(this._stage, keys_to_save),
 				local = m.getIn(this._local, keys_to_save);
 			var new_local = null;
-			if (_isObj(stage) && _isObj(local)) {
+			if (isObj(stage) && isObj(local)) {
 				new_local = m.merge(stage, local);
 			}
 			else if (local !== null) {
