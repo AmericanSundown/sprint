@@ -9,13 +9,21 @@
   "author": "Dmitri Gaskin <dmitrig01@gmail.com>",
   "license": "ISC",
   "dependencies": {
+    "bluebird": "^2.9.24",
     "browserify": "9.0.8",
     "component-emitter": "1.1.2",
     "mori": "0.3.2",
     "react": "0.13.2",
+    "rewire": "^2.3.3",
     "superagent": "1.2.0"
   },
   "devDependencies": {
+    "babelify": "^6.0.2",
+    "coffee-script": "^1.9.2",
+    "es6ify": "^1.6.0",
+    "rewireify": "0.0.13",
+    "tape": "^4.0.0",
+    "tape-catch": "^1.0.4",
     "tapes": "2.0.0"
   }
 }

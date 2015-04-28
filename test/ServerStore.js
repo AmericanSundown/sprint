@@ -1,48 +1,47 @@
 import test from 'tape';
 import m from 'mori';
-import Store from '../Store';
+import B from 'bluebird';
 
-test('Store', (t) => {
-	var s;
-	function setup() { s = new Store(); };
+test('ServerStore', (t) => {
+	var s, ServerStore;
+	function setup() {
+		ServerStore = require('../ServerStore');
+		s = new ServerStore('test', [ 2 ]);
+	}
 
-	t.test('basic get and set works', (t) => {
+	t.test('basic get and set works on server', (t) => {
 		setup();
 		t.ok(m.equals(s.get(), m.hashMap()), 'basic is empty');
 		s.set([ 'a' ], 'b');
 		t.ok(s.get([ 'a' ]) == 'b', 'key get works');
-		t.ok(s.get([ 'b' ]) == null, 'empty key is empty');
+		// t.ok(s.get([ 'b' ]) == null, 'empty key is empty');
 		t.ok(m.equals(s.get(), m.hashMap('a', 'b')), 'map get works');
 		t.end();
 	});
 
-	t.test('subscribe/notify works', (t) => {
-		setup();
-		t.plan(2);
-		s.subscribe([ 'a' ], () => {
-			t.ok(true, 'was notified');
-		});
-		s.set([ 'a' ], 'b');
-		s.set([ 'a' ], 'c');
-	});
 
-	t.test('unsubscribe works', (t) => {
+	t.test("getter doesn't notify", (t) => {
 		setup();
 		t.plan(1);
-
-		var f = () => {
-			// if not ok, this gets called over and over until we hit the recursion limit.
-			t.ok(true, 'was notified');
-			s.unsubscribe([ 'a' ], f);
-			s.set([ 'a' ], 'c');
-		};
-
-		s.subscribe([ 'a' ], f);
-		s.set([ 'a' ], 'b');
+		ServerStore.__set__('_server2', { 'default': function() { return new B(function() {}); } });
+		s.subscribe([ 'a', 'b' ], function() { t.ok(true, 'subscription called'); });
+		s.get([ 'a', 'b' ]);
+		t.ok(true, 'passed');
 	});
 
-	t.test('nested get and set works', (t) => {
+	t.test('subscribe/notify works on server function', (t) => {
 		setup();
+		t.plan(3);
+		s.subscribe([ 'a' ], function() { t.ok(true, 'subscription called'); });
+
+		ServerStore.__set__('_server2', { 'default': function() { return B.resolve('abc'); } });
+
+		s.get([ 'a', 'b' ]);
+		s.get([ 'a', 'c' ]);
+		t.ok(true, 'finished');
+	});
+	/*
+	t.test('nested get and set works', (t) => {
 		s.set([ 'a', 'b' ], 'c');
 
 		t.ok(s.get([ 'a', 'b' ]) == 'c', 'key get works');
@@ -55,7 +54,6 @@ test('Store', (t) => {
 	});
 
 	t.test('subscribe/notify works', (t) => {
-		setup();
 		t.plan(2);
 		s.subscribe([ 'a', 'b' ], () => {
 			t.ok(true, 'was notified');
@@ -66,7 +64,6 @@ test('Store', (t) => {
 	});
 
 	t.test('parent subscribe/notify works', (t) => {
-		setup();
 		t.plan(3);
 		s.subscribe([ 'a' ], () => { t.ok(true, 'was notified'); });
 		s.set([ 'a', 'b' ], 'b');
@@ -76,7 +73,6 @@ test('Store', (t) => {
 	});
 
 	t.test('unsubscribe works', (t) => {
-		setup();
 		t.plan(1);
 
 		var f = () => {
@@ -89,5 +85,6 @@ test('Store', (t) => {
 		s.subscribe([ 'a', 'b' ], f);
 		s.set([ 'a', 'b' ], 'b');
 	});
+	*/
 
-});
+}, { timeout: 100 });
