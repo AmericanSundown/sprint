@@ -4,24 +4,21 @@ import B from 'bluebird';
 
 test('ServerStore', (t) => {
 	var s, ServerStore;
-	function setup() {
-		ServerStore = require('../ServerStore');
-		s = new ServerStore('test', [ 2 ]);
-	}
 
 	t.test('basic get and set works on server', (t) => {
-		setup();
+		var ServerStore = require('../ServerStore'), s = new ServerStore('test', [ 2 ]);
+
 		t.ok(m.equals(s.get(), m.hashMap()), 'basic is empty');
 		s.set([ 'a' ], 'b');
 		t.ok(s.get([ 'a' ]) == 'b', 'key get works');
-		// t.ok(s.get([ 'b' ]) == null, 'empty key is empty');
+
 		t.ok(m.equals(s.get(), m.hashMap('a', 'b')), 'map get works');
 		t.end();
 	});
 
-
 	t.test("getter doesn't notify", (t) => {
-		setup();
+		var ServerStore = require('../ServerStore'), s = new ServerStore('test', [ 2 ]);
+
 		t.plan(1);
 		ServerStore.__set__('_server2', { 'default': function() { return new B(function() {}); } });
 		s.subscribe([ 'a', 'b' ], function() { t.ok(true, 'subscription called'); });
@@ -29,9 +26,23 @@ test('ServerStore', (t) => {
 		t.ok(true, 'passed');
 	});
 
-	t.test('subscribe/notify works on server function', (t) => {
-		setup();
+	t.test('subscribe/notify works on server function - called twice with arty 2', (t) => {
+		var ServerStore = require('../ServerStore'), s = new ServerStore('test', [ 2 ]);
+
 		t.plan(3);
+		s.subscribe([ 'a' ], function() { t.ok(true, 'subscription called'); });
+
+		ServerStore.__set__('_server2', { 'default': function() { return B.resolve('abc'); } });
+
+		s.get([ 'a', 'b' ]);
+		s.get([ 'a', 'c' ]);
+		t.ok(true, 'finished');
+	});
+
+	t.test('subscribe/notify works on server function - called once with arity 1', (t) => {
+		var ServerStore = require('../ServerStore'), s = new ServerStore('test', [ 1 ]);
+
+		t.plan(2);
 		s.subscribe([ 'a' ], function() { t.ok(true, 'subscription called'); });
 
 		ServerStore.__set__('_server2', { 'default': function() { return B.resolve('abc'); } });
