@@ -8,8 +8,19 @@ class Action {
 	}
 
 	execute(storage) {
-		// .......
-		console.log('action!', k);
+		var resolvedData = {};
+		for (var k in this.data) {
+			if (this.data.hasOwnProperty(k)) {
+				if (this.data[k].get && typeof this.data[k].get == 'function') {
+					resolvedData[k] = this.data[k].get(storage);
+				}
+				else {
+					resolvedData[k] = this.data[k];
+				}
+			}
+		}
+
+		return storage.getNamespace(this.namespace).action(this.action, resolvedData);
 	}
 }
 
