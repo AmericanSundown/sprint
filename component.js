@@ -105,7 +105,8 @@ export function wrap(Component, options) {
 			}
 			this._otherParameters = {
 				_setState: this._wrappedSetState,
-				_actions: _actions
+				_actions: _actions,
+				set: (k, v) => options.props[k].set(this._storage, v)
 			};
 
 			var subscribe = (k) => {
