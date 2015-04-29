@@ -25,6 +25,10 @@ class Storage {
 		this._namespaces = m.assoc(this._namespaces, k, v);
 	}
 
+	getNamespace(n) {
+		return m.get(this._namespaces, n);
+	}
+
 	clone() {
 		return new Storage(this._namespaces);
 	}

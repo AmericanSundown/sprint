@@ -18,7 +18,7 @@ storage.register('prefs', prefNS);
 
 class TestComponent extends SprintComponent {
 	render() {
-		return <div>Hello {this.props.blackberry_url}</div>;
+		return <div>Hello {this.props.blackberry_url}<br/>{this.props.blackberry_url_loading ? 'loading' : 'not loading'}</div>;
 	}
 }
 var T = wrap(TestComponent, {
