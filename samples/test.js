@@ -4,20 +4,17 @@ import React from 'react';
 import B from 'bluebird';
 
 var storage = new Storage();
-var server = {
-	action: function() {
-		console.log('calling action')
-		return B.delay(1000).return({
-			'a': { 'blackberry_url': 'ABC' },
-			'b': { 'blackberry_url': 'DEF' }
-		});
+var appServer = {
+	action: function(ns, call, data) {
+		return B.delay(1000).return({ 'blackberry_url': data.keys[0] == 'a' ? 'ABC' : 'DEF' });
 	}
 };
-
-var appNS = new ServerNamespace('app', server, 0, 1);
-//appNS.set([ 'a' ], { 'blackberry_url': 'ABC' });
-//appNS.set([ 'b' ], { 'blackberry_url': 'DEF' });
+var appNS = new ServerNamespace('app', appServer, 1, 1);
 storage.register('app', appNS);
+
+var prefServer = { action: function() { return B.delay(2000).return({ "app_id": 'b' }); } };
+var prefNS = new ServerNamespace('prefs', prefServer, 0, 1);
+storage.register('prefs', prefNS);
 
 class TestComponent extends SprintComponent {
 	render() {
@@ -26,7 +23,7 @@ class TestComponent extends SprintComponent {
 }
 var T = wrap(TestComponent, {
 	props: {
-		"blackberry_url": k("app", k("props", "app_id"), "blackberry_url")
+		"blackberry_url": k("app", k([ k("prefs", "app_id"), k('props', 'app_id') ]), "blackberry_url")
 	},
 	actions: {
 		"save": a("app", "save")
@@ -34,6 +31,6 @@ var T = wrap(TestComponent, {
 });
 
 window.onload = function() {
-	React.render(<T storage={storage} app_id="b" />, document.getElementById('test'));
+	React.render(<T storage={storage} app_id="a" />, document.getElementById('test'));
 };
 

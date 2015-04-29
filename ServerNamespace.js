@@ -147,7 +147,6 @@ class ServerNamespace extends Namespace {
 		this._loading = m.assoc(this._loading, keys_to_load, STATE_LOADING);
 
 		this.action('load', { keys: m.toJs(keys_to_load) }).then((value) => {
-			console.log('HERE!!', keys_to_load.toString())
 			this._loading = m.assoc(this._loading, keys_to_load, STATE_LOADED);
 
 			this._remote = emptyAssocIn(this._remote, keys_to_load, m.toClj(value));

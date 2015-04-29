@@ -130,15 +130,19 @@ class KeyOption {
 	}
 
 	get(storage) {
-		return this._x('get', storage);
+		for (var i = 0; i < this.options.length; i++) {
+			var resolved = this.options[i].get(storage);
+			if (resolved !== null) { return resolved; }
+		}
+		return null;
 	}
 
 	isLoading(storage) {
-		return this._x('isLoading', storage);
+		return this._isX('isLoading', storage);
 	}
 
 	isError(storage) {
-		return this._x('isError', storage);
+		return this._isX('isError', storage);
 	}
 
 	subscribe(storage, f) {
@@ -153,12 +157,11 @@ class KeyOption {
 		}
 	}
 
-	_x(x, storage) {
+	_isX(x, storage) {
 		for (var i = 0; i < this.options.length; i++) {
-			var resolved = this.options[i][x](storage);
-			if (resolved !== null) { return resolved; }
+			if (!this.options[i][x](storage)) { return false; }
 		}
-		return null;
+		return true;
 	}
 
 }
