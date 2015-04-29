@@ -1,14 +1,10 @@
 import m from 'mori';
 import Namespace from './Namespace';
+import { emptyAssocIn } from './utils';
 
 const STATE_LOADING = 'loading';
 const STATE_LOADED = 'loaded';
 const STATE_ERROR = 'error';
-
-function emptyAssocIn(obj, keys, value) {
-	if (!m.count(keys)) { return value; }
-	return m.assocIn(obj, keys, value);
-}
 
 function isObj(o) {
 	try {

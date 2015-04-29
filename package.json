@@ -12,11 +12,12 @@
     "bluebird": "2.9.24",
     "component-emitter": "1.1.2",
     "mori": "0.3.2",
-    "react": "0.13.2",
+    "react": "^0.13.2",
     "superagent": "1.2.0"
   },
   "devDependencies": {
     "babel": "5.1.13",
+    "babelify": "^6.0.2",
     "tape": "4.0.0",
     "tape-catch": "1.0.4"
   }

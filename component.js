@@ -1,81 +1,137 @@
-import { SprintComponent, wrap, k, a } from 'sprint';
+import Namespace from './Namespace';
+import { merge } from './utils';
+import React from 'react';
+import m from 'mori';
 
-class BlackberrySelector extends SprintComponent {
-	render() {
-		return <div>Hello {this.props.name}</div>;
+export class SprintComponent extends React.Component {
+	constructor() {
+		super();
 	}
-}
-
-var app_id_key = k([ k("props", "app_id"), k("user_prefs", "app_id") ]);
-
-export default wrap(BlackberrySelector, {
-	props: {
-		"blackberry_url": k("app", app_id_key, "blackberry_url"),
-		"default_url": k("app", app_id_key, "default_url"),
-	},
-	actions: {
-		"save": a("app", "save")
+	componentWillMount() {
+		this.props._setState(this.state || {});
 	}
-});
-
-
-class SprintComponent extends React.Comopnent {
 	setState(state) {
-		super(state);
+		super.setState(state);
 		this.props._setState(state);
 	}
 }
 
-function wrap(component, options) {
+export function wrap(Component, options) {
 	return class extends React.Component {
 		constructor() {
 			super();
 			this.state = {};
 		}
 
-		// Ugly mutations sorry.
-		_getStateForProp(k, props) {
-			var val = this.props.storage.get(options.props[k]);
-
-			var error = props[k + '_error'] = this.props.storage.isError(options.props[k]);
-			var loading = props[k + '_loading'] = this.props.storage.isLoading(options.props[k]);
-
-			props[k] = !error && !loading ? val : null;
-
-			return props;
-		}
-
-		_getState() {
-			var props = {};
-			for (var k in options.props) {
-				if (options.props.hasOwnProperty(k)) {
+		componentWillReceiveProps(nextProps) {
+			for (var k in nextProps) {
+				if (nextProps.hasOwnProperty(k)) {
+					if (!m.equals(this.props[k], nextProps[k])) {
+						this._propsNamespace.set([ k ], nextProps[k]);
+					}
 				}
 			}
+		}
 
-			return props;
+		_wrappedSetState(newState) {
+			for (var k in newState) {
+				if (newState.hasOwnProperty(k)) {
+					if (!m.equals(this._wrappedState[k], newState[k])) {
+						this._stateNamespace.set([ k ], newState[k]);
+						this._wrappedState[k] = newState[k];
+					}
+				}
+			}
+		}
+
+		_updateProp(k) {
+			var newState = {}, prop = options.props[k];
+			// Trigger load :P
+			var val = prop.get(this._storage);
+
+			var err = newState[k + '_error'] = prop.isError(this._storage);
+			var loading = newState[k + '_loading'] = prop.isLoading(this._storage);
+
+			newState[k] = !err && !loading ? val : null;
+
+			this.setState(newState);
+		}
+
+		shouldComponentUpdate(nextProps, nextState) {
+			// Only check state – props updates state in componentWillReceiveProps.
+			for (var k in nextState) {
+				if (nextState.hasOwnProperty(k)) {
+					if (!m.equals(this.state[k], nextState[k])) { return true; }
+				}
+			}
+			return false;
 		}
 
 		componentWillMount() {
-			this._subscribers = [];
-			var subscribe = (k) => {
-				var subscriber = () => {
-					this.setState(this._getStateForProps(k, {}));
-				};
+			this._wrappedState = {};
 
-				this._subscribers.push(subscriber);
-				this.props.storage.subscribe(k, subscriber);
+			this._storage = this.props.storage.clone();
+			this._propsNamespace = new Namespace();
+			this._stateNamespace = new Namespace();
+			this._storage.register('props', this._propsNamespace);
+			this._storage.register('state', this._stateNamespace);
+
+			this._propsNamespace.set([], this.props);
+			this._stateNamespace.set([], this.props);
+
+			this._subscribers = m.hashMap();
+
+			for (var k in options.props) {
+				if (options.props.hasOwnProperty(k)) {
+					this._updateProp(k);
+				}
 			}
+
+			this._otherParameters = {
+				_setState: this._wrappedSetState
+			};
+
+			var createAction = (k) => {
+				this._otherParameters[k] = () => { this._action(k); };
+			};
+			for (var k in options.actions) {
+				if (options.actions.hasOwnProperty(k)) {
+					createAction(k);
+				}
+			}
+
+			var subscribe = (k) => {
+				if (m.get(k, this._subscribers)) { return; }
+
+				var subscriber = () => { this._updateProp(k); };
+
+				this._subscribers = m.assoc(this._subscribers, k, subscriber);
+				options.props[k].subscribe(this._storage, subscriber);
+			};
+
 			for (var k in options.props) {
 				if (options.props.hasOwnProperty(k)) { subscribe(k); }
 			}
-
-			this.state = getState();
 		}
 
 		componentWillUnmount() {
-			for (var i = 0; i < this._subscribers.length; i++) {
-				this.props.storage.unsubscribe(this._subscribers[i]);
-			}
+			m.each(function(v) {
+				var [ k, subscriber ] = v;
+				k.unsubscribe(this._storage, subscriber);
+			}, this._subscribers);
+			this._subscribers = m.hashMap();
+		}
+
+		render() {
+			// todo: assemble actions
+			return React.createElement(
+				Component,
+				merge(this.state, this._otherParameters)
+			);
+		}
+
+		_action(k) {
+			return options.actions[k].execute(this._storage);
 		}
 	}
 }

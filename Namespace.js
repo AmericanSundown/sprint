@@ -1,4 +1,5 @@
 import m from 'mori';
+import { emptyAssocIn } from './utils';
 
 class Namespace {
 	constructor() {
@@ -11,7 +12,7 @@ class Namespace {
 	}
 
 	set(keys, value) {
-		this._local = m.assocIn(this._local, keys, value);
+		this._local = emptyAssocIn(this._local, keys, m.toClj(value));
 		this._notify(keys);
 	}
 
