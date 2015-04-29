@@ -37,9 +37,7 @@ var T = wrap(TestComponent, {
 		"blackberry_url": k("app", app_id, "blackberry_url")
 	},
 	actions: {
-		"save": a("app", "save", {
-			"key": app_id
-		})
+		"save": a("app", "save", { "key": app_id })
 	}
 });
 

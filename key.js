@@ -43,12 +43,12 @@ class Key {
 				var new_subscriptions = m.difference(new_deps, deps),
 					old_subscriptions = m.difference(deps, new_deps);
 
-				m.each(old_subscriptions, (dep) => { storage.unsubscribe(dep, subscription_func); });
-				m.each(new_subscriptions, (dep) => { storage.subscribe(dep, subscription_func); });
+				m.each(old_subscriptions, (dep) => storage.unsubscribe(dep, subscription_func));
+				m.each(new_subscriptions, (dep) => storage.subscribe(dep, subscription_func));
 
 				deps = new_deps;
 
-				m.each(m.get(this._subscriptions, storage), (sub) => { sub(); });
+				m.each(m.get(this._subscriptions, storage), (sub) => sub());
 			};
 
 			// Subscribe to first batch.
@@ -62,9 +62,7 @@ class Key {
 		var new_subs = m.disj(subscriptions, f);
 		if (!m.count(new_subs)) {
 			var subscription_func = m.get(this._subscriptionFuncs, storage);
-			m.each(this.dependencies(), (dep) => {
-				storage.unsubscribe(dep, subscription_func);
-			});
+			m.each(this.dependencies(), (dep) => storage.unsubscribe(dep, subscription_func));
 			m.dissoc(this._subscriptionFuncs, storage);
 			m.dissoc(this._subscriptions, storage);
 		}

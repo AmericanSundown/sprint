@@ -24,15 +24,15 @@ class Namespace {
 		var self = this;
 
 		// Get the key path ([a b c] -> [[a] [a b] [a b c]])
-		var keyCombos = m.reduce(function(acc, key) {
-			return m.conj(acc, m.conj(m.last(acc), key));
-		}, m.vector(m.vector()), m.take(this._keyArity, keys));
+		var keyCombos = m.reduce(
+			(acc, key) => m.conj(acc, m.conj(m.last(acc), key)),
+			m.vector(m.vector()), // Notify the empty key :-)
+			m.take(this._keyArity, keys)
+		);
 
 		// Go through each key combo, then each subscriber, and trigger them.
 		m.each(keyCombos, (keyCombo) => {
-			m.each(m.get(this._subscribers, keyCombo), (subscriber) => {
-				subscriber();
-			});
+			m.each(m.get(this._subscribers, keyCombo), (subscriber) => subscriber());
 		});
 	}
 

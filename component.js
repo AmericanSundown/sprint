@@ -96,7 +96,7 @@ export function wrap(Component, options) {
 
 			var _actions = {};
 			var createAction = (k) => {
-				_actions[k] = () => { this._action(k); };
+				_actions[k] = () => this._action(k);
 			};
 			for (var k in options.actions) {
 				if (options.actions.hasOwnProperty(k)) {
@@ -111,7 +111,7 @@ export function wrap(Component, options) {
 			var subscribe = (k) => {
 				if (m.get(k, this._subscribers)) { return; }
 
-				var subscriber = () => { this._updateProp(k); };
+				var subscriber = () => this._updateProp(k);
 
 				this._subscribers = m.assoc(this._subscribers, k, subscriber);
 				options.props[k].subscribe(this._storage, subscriber);
