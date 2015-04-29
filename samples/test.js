@@ -24,5 +24,5 @@ var T = wrap(TestComponent, {
 
 window.onload = function() {
 	React.render(<T storage={storage} app_id="b" />, document.getElementById('test'));
-}
+};
 

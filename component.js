@@ -67,8 +67,8 @@ export function wrap(Component, options) {
 			return false;
 		}
 
-		componentWillMount() {
-			this._wrappedState = {};
+		componentWillMount(wrappedState) {
+			this._wrappedState = wrappedState;
 
 			this._storage = this.props.storage.clone();
 			this._propsNamespace = new Namespace();
@@ -77,7 +77,7 @@ export function wrap(Component, options) {
 			this._storage.register('state', this._stateNamespace);
 
 			this._propsNamespace.set([], this.props);
-			this._stateNamespace.set([], this.props);
+			this._stateNamespace.set([], wrappedState);
 
 			this._subscribers = m.hashMap();
 
