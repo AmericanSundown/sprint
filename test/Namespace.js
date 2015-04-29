@@ -4,7 +4,7 @@ import Namespace from '../Namespace';
 
 test('Namespace', (t) => {
 	var s;
-	function setup() { s = new Namespace(); };
+	function setup() { s = new Namespace(1); };
 
 	t.test('basic get and set works', (t) => {
 		setup();
@@ -90,4 +90,17 @@ test('Namespace', (t) => {
 		s.set([ 'a', 'b' ], 'b');
 	});
 
+	t.test('subscribing to a subkey works', (t) => {
+		setup();
+		t.plan(2);
+
+		var f = () => {
+			t.ok(true, 'was notified');
+		};
+
+		s.subscribe([ 'a', 'b' ], f);
+		s.set([ 'a' ], { 'b': 1 });
+		s.set([ 'a' ], { 'b': 2 });
+	});
 });
+

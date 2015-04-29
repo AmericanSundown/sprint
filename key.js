@@ -3,6 +3,8 @@ import m from 'mori';
 class Key {
 	constructor(elements) {
 		this.elements = elements;
+		this._subscriptions = m.hashMap();
+		this._subscriptionFuncs = m.hashMap();
 	}
 
 	get(storage) {
@@ -29,11 +31,43 @@ class Key {
 	}
 
 	subscribe(storage, f) {
-		console.log('subscribing...')
+		if (m.get(this._subscriptions, storage)) {
+			this._subscriptions = m.assoc(this._subscriptions, storage, m.conj(m.get(this._subscriptions, storage), f));
+		}
+		else {
+			this._subscriptions = m.assoc(this._subscriptions, storage, m.set([ f ]));
+
+			var deps = this.dependencies(storage);
+			var subscription_func = () => {
+				var new_deps = this.dependencies(storage);
+				var new_subscriptions = m.difference(new_deps, deps),
+					old_subscriptions = m.difference(deps, new_deps);
+
+				m.each(old_subscriptions, (dep) => { storage.unsubscribe(dep, subscription_func); });
+				m.each(new_subscriptions, (dep) => { storage.subscribe(dep, subscription_func); });
+
+				deps = new_deps;
+
+				m.each(m.get(this._subscriptions, storage), (sub) => { sub(); });
+			};
+
+			// Subscribe to first batch.
+			m.each(deps, (dep) => { storage.subscribe(dep, subscription_func); });
+			this._subscriptionFuncs = m.assoc(this._subscriptionFuncs, storage, subscription_func);
+		}
 	}
 
 	unsubscribe(storage, f) {
-		console.log('unsubscribing...')
+		var subscriptions = m.get(this._subscriptions, storage);
+		var new_subs = m.disj(subscriptions, f);
+		if (!m.count(new_subs)) {
+			var subscription_func = m.get(this._subscriptionFuncs, storage);
+			m.each(this.dependencies(), (dep) => {
+				storage.unsubscribe(dep, subscription_func);
+			});
+			m.dissoc(this._subscriptionFuncs, storage);
+			m.dissoc(this._subscriptions, storage);
+		}
 	}
 
 	_isX(x, storage) {

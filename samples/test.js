@@ -1,11 +1,22 @@
 // this part belongs in BlackberrySelector
-import { Namespace, Storage, SprintComponent, wrap, k, a } from '../index';
+import { ServerNamespace, Storage, SprintComponent, wrap, k, a } from '../index';
 import React from 'react';
+import B from 'bluebird';
 
 var storage = new Storage();
-var appNS = new Namespace();
-appNS.set([ 'a' ], { 'blackberry_url': 'ABC' });
-appNS.set([ 'b' ], { 'blackberry_url': 'DEF' });
+var server = {
+	action: function() {
+		console.log('calling action')
+		return B.delay(1000).return({
+			'a': { 'blackberry_url': 'ABC' },
+			'b': { 'blackberry_url': 'DEF' }
+		});
+	}
+};
+
+var appNS = new ServerNamespace('app', server, 0, 1);
+//appNS.set([ 'a' ], { 'blackberry_url': 'ABC' });
+//appNS.set([ 'b' ], { 'blackberry_url': 'DEF' });
 storage.register('app', appNS);
 
 class TestComponent extends SprintComponent {

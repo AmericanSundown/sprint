@@ -9,7 +9,6 @@ export class SprintComponent extends React.Component {
 	}
 
 	componentWillMount() {
-		super.componentWillMount();
 		this.props._setState(this.state || {});
 		for (var k in this.props._actions) {
 			if (this.props._actions.hasOwnProperty[k]) {

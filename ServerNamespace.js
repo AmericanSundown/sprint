@@ -14,13 +14,12 @@ function isObj(o) {
 }
 
 class ServerNamespace extends Namespace {
-	constructor(namespace, server, loadArity, saveArity) {
-		super();
+	constructor(namespace, server, keyArity, saveArity) {
+		super(keyArity);
 
-		if (typeof loadArity != 'number' || typeof saveArity != 'number') { throw "Must specify a load and save arity"; }
+		if (typeof keyArity != 'number' || typeof saveArity != 'number') { throw "Must specify a load and save arity"; }
 
 		this._namespace = namespace;
-		this._loadArity = loadArity;
 		this._saveArity = saveArity;
 		this._server = server;
 
@@ -148,6 +147,7 @@ class ServerNamespace extends Namespace {
 		this._loading = m.assoc(this._loading, keys_to_load, STATE_LOADING);
 
 		this.action('load', { keys: m.toJs(keys_to_load) }).then((value) => {
+			console.log('HERE!!', keys_to_load.toString())
 			this._loading = m.assoc(this._loading, keys_to_load, STATE_LOADED);
 
 			this._remote = emptyAssocIn(this._remote, keys_to_load, m.toClj(value));
@@ -159,9 +159,9 @@ class ServerNamespace extends Namespace {
 	}
 
 	_loaderKeys(keys) {
-		if (m.count(keys) < this._loadArity) { throw "Load is not specific enough"; }
+		if (m.count(keys) < this._keyArity) { throw "Load is not specific enough"; }
 
-		return m.into(m.vector(), m.take(this._loadArity, keys));
+		return m.into(m.vector(), m.take(this._keyArity, keys));
 	}
 }
 
