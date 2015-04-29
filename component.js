@@ -7,9 +7,17 @@ export class SprintComponent extends React.Component {
 	constructor() {
 		super();
 	}
+
 	componentWillMount() {
+		super.componentWillMount();
 		this.props._setState(this.state || {});
+		for (var k in this.props._actions) {
+			if (this.props._actions.hasOwnProperty[k]) {
+				this[k] = this.props._actions[k];
+			}
+		}
 	}
+
 	setState(state) {
 		super.setState(state);
 		this.props._setState(state);
@@ -87,18 +95,19 @@ export function wrap(Component, options) {
 				}
 			}
 
-			this._otherParameters = {
-				_setState: this._wrappedSetState
-			};
-
+			var _actions = {};
 			var createAction = (k) => {
-				this._otherParameters[k] = () => { this._action(k); };
+				_actions[k] = () => { this._action(k); };
 			};
 			for (var k in options.actions) {
 				if (options.actions.hasOwnProperty(k)) {
 					createAction(k);
 				}
 			}
+			this._otherParameters = {
+				_setState: this._wrappedSetState,
+				_actions: _actions
+			};
 
 			var subscribe = (k) => {
 				if (m.get(k, this._subscribers)) { return; }
@@ -123,7 +132,6 @@ export function wrap(Component, options) {
 		}
 
 		render() {
-			// todo: assemble actions
 			return React.createElement(
 				Component,
 				merge(this.state, this._otherParameters)
