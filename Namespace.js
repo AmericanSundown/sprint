@@ -15,6 +15,9 @@ class Namespace {
 		this._notify(keys);
 	}
 
+	isLoading() { return false; }
+	isError() { return false; }
+
 	_notify(keys) {
 		var self = this;
 	

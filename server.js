@@ -2,7 +2,7 @@ import m from 'mori';
 import superagent from 'superagent';
 
 class Server {
-	constructor(flushAfter, endpoint) {
+	constructor(endpoint, flushAfter) {
 		this._actions = {};
 		this._responses = {};
 
@@ -37,7 +37,7 @@ class Server {
 		this._actions = {};
 		this._responses = {};
 
-		superagent(this.endpoint).post(actions).end((err, res) => {
+		superagent(this._endpoint).post(actions).end((err, res) => {
 			for (var k in res.body) {
 				if (res.body.hasOwnProperty(k)) {
 					if (err) {
