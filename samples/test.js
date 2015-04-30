@@ -30,16 +30,12 @@ storage.register('app', ns);
 window.ns = ns;
 
 class Input extends SprintComponent {
-	handleClick() {
-		this.save();
-	}
 	setName(e) {
 		this.set('field', e.target.value);
 	}
 	render() {
 		return <div>
 			<input value={this.props.field} onChange={this.setName.bind(this)} /><br/>
-
 			{this.props.name_loading ? 'loading' : 'not loading'}
 		</div>;
 	}
@@ -64,7 +60,6 @@ var DevEmail = wrap(Input, {
 		"save": a("app", "save", { "key": [ app_id ] })
 	}
 });
-
 
 
 class Group extends React.Component {

@@ -64,10 +64,6 @@ export function wrap(Component, options) {
 			this.setState(newState);
 		}
 
-		_createAction(k) {
-			return () => this._action(k);
-		}
-
 		shouldComponentUpdate(nextProps, nextState) {
 			// Only check state – props updates state in componentWillReceiveProps.
 			for (var k in nextState) {
@@ -96,7 +92,7 @@ export function wrap(Component, options) {
 				if (this.props.events.hasOwnProperty(k)) {
 					let eventSystem = this.props.events[k],
 						action = options.actions[k];
-					if (action) { eventSystem.register(action.namespace, this._createAction(k)); }
+					if (action) { eventSystem.register(action, this._storage); }
 				}
 			}
 
@@ -149,6 +145,10 @@ export function wrap(Component, options) {
 				Component,
 				merge(this.state, this._otherParameters)
 			);
+		}
+
+		_createAction(k) {
+			return () => this._action(k);
 		}
 
 		_action(k) {

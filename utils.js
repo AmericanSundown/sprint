@@ -12,9 +12,16 @@ export function merge(a, b) {
     return res;
 }
 
+export function isObjOrMap(o) {
+	try {
+		return o !== null && (m.isMap(o) || isObj(i));
+	}
+	catch (e) { return false; }
+}
+
 export function isObj(o) {
 	try {
-		return o !== null && (m.isMap(o) || Object.getPrototypeOf(o) === Object.prototype);
+		return o !== null && Object.getPrototypeOf(o) === Object.prototype;
 	}
 	catch (e) { return false; }
 }
