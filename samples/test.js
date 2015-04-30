@@ -23,11 +23,11 @@ var prefNS = new ServerNamespace('prefs', prefServer, 0, 1);
 storage.register('prefs', prefNS);
 
 class TestComponent extends SprintComponent {
-	_handleClick() {
-		this.set('blackberry_url', 'GHI');
+	handleClick() {
+		this.save();
 	}
 	render() {
-		return <div onClick={ this._handleClick.bind(this) }>Hello {this.props.blackberry_url}<br/>{this.props.blackberry_url_loading ? 'loading' : 'not loading'}</div>;
+		return <div><a href="#" onClick={this.handleClick.bind(this)}>Hello</a> {this.props.blackberry_url}<br/>{this.props.blackberry_url_loading ? 'loading' : 'not loading'}</div>;
 	}
 }
 
@@ -47,4 +47,3 @@ window.onload = function() {
 	React.render(<T storage={storage} app_id="a" />, document.getElementById('test'));
 };
 
-window.ns = appNS;
