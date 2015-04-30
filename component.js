@@ -96,7 +96,7 @@ export function wrap(Component, options) {
 				if (this.props.events.hasOwnProperty(k)) {
 					let eventSystem = this.props.events[k],
 						action = options.actions[k];
-					if (action) { eventSystem.register(this._createAction(k)); }
+					if (action) { eventSystem.register(action.namespace, this._createAction(k)); }
 				}
 			}
 
