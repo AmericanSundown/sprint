@@ -16,7 +16,6 @@ class Storage {
 		this.set = _passthrough('set');
 		this.isLoading = _passthrough('isLoading');
 		this.isError = _passthrough('isError');
-		this.action = _passthrough('action');
 		this.subscribe = _passthrough('subscribe');
 		this.unsubscribe = _passthrough('unsubscribe');
 	}

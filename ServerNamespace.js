@@ -1,17 +1,10 @@
 import m from 'mori';
 import Namespace from './Namespace';
-import { emptyAssocIn } from './utils';
+import { emptyAssocIn, isObj } from './utils';
 
 const STATE_LOADING = 'loading';
 const STATE_LOADED = 'loaded';
 const STATE_ERROR = 'error';
-
-function isObj(o) {
-	try {
-		return o !== null && (m.isMap(o) || Object.getPrototypeOf(o) === Object.prototype);
-	}
-	catch (e) { return false; }
-}
 
 class ServerNamespace extends Namespace {
 	constructor(namespace, server, keyArity, saveArity) {

@@ -1,4 +1,5 @@
 import m from 'mori';
+import { isObj } from './utils';
 
 class Action {
 	constructor(namespace, action, data) {
@@ -8,19 +9,29 @@ class Action {
 	}
 
 	execute(storage) {
-		var resolvedData = {};
-		for (var k in this.data) {
-			if (this.data.hasOwnProperty(k)) {
-				if (this.data[k].get && typeof this.data[k].get == 'function') {
-					resolvedData[k] = this.data[k].get(storage);
-				}
-				else {
-					resolvedData[k] = this.data[k];
-				}
+		function resolve(data) {
+			try {
+				if (data.get && typeof data.get == 'function') { return data.get(storage); }
 			}
+			catch (e) {}
+
+			if (isObj(data)) {
+				var built = {};
+				for (var k in data) {
+					if (data.hasOwnProperty(k)) {
+						built[k] = resolve(data[k]);
+					}
+				}
+				return built;
+			}
+			if (Array.isArray(data)) {
+				return data.map(resolve);
+			}
+
+			return data;
 		}
 
-		return storage.getNamespace(this.namespace).action(this.action, resolvedData);
+		return storage.getNamespace(this.namespace).action(this.action, resolve(this.data));
 	}
 }
 

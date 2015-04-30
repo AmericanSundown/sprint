@@ -11,3 +11,10 @@ export function merge(a, b) {
     for (var k in b) { if (b.hasOwnProperty(k)) { res[k] = b[k]; } }
     return res;
 }
+
+export function isObj(o) {
+	try {
+		return o !== null && (m.isMap(o) || Object.getPrototypeOf(o) === Object.prototype);
+	}
+	catch (e) { return false; }
+}

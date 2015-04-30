@@ -104,7 +104,7 @@ export function wrap(Component, options) {
 				}
 			}
 
-			_actions.set = (k, v) => options.props[k].set(this._storage, v);
+			_actions.set = (k, v) => options.props[k].setStorage(this._storage, v);
 
 			this._otherParameters = {
 				_setState: this._wrappedSetState,
