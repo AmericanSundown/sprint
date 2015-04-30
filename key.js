@@ -8,18 +8,15 @@ class Key {
 	}
 
 	get(storage) {
-		var elements = m.vector();
-		for (var i = 0; i < this.elements.length; i++) {
-			if (this.elements[i].get) {
-				var resolved = this.elements[i].get(storage);
-				if (resolved === null) { return null; }
-				elements = m.conj(elements, resolved);
-			}
-			else {
-				elements = m.conj(elements, this.elements[i]);
-			}
-		}
-		return storage.get(elements);
+		var element = this._materializeKey(storage);
+		if (!element) { element = null }
+		return storage.get(element);
+	}
+
+	setStorage(storage, value) {
+		var element = this._materializeKey(storage);
+		if (!element) { throw 'Your key is empty'; }
+		return storage.set(element, value);
 	}
 
 	isLoading(storage) {
@@ -84,6 +81,21 @@ class Key {
 			}
 		}
 		return storage[x](elements);
+	}
+
+	_materializeKey(storage) {
+		var elements = m.vector();
+		for (var i = 0; i < this.elements.length; i++) {
+			if (this.elements[i].get) {
+				var resolved = this.elements[i].get(storage);
+				if (resolved === null) { return null; }
+				elements = m.conj(elements, resolved);
+			}
+			else {
+				elements = m.conj(elements, this.elements[i]);
+			}
+		}
+		return elements;
 	}
 
 	dependencies(storage) {
