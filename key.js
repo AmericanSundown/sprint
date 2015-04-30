@@ -13,7 +13,7 @@ class Key {
 		return storage.get(element);
 	}
 
-	set(storage, value) {
+	setStorage(storage, value) {
 		var element = this._materializeKey(storage);
 		if (!element) { throw 'Your key is empty'; }
 		return storage.set(element, value);
