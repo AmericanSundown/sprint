@@ -8,11 +8,15 @@ class Key {
 	}
 
 	get(storage) {
-		return storage.get(this._materializeKey(storage));
+		var element = this._materializeKey(storage);
+		if (!element) { throw 'Your key is empty'; }
+		return storage.get(element);
 	}
 
 	set(storage, value) {
-		return storage.set(this._materializeKey(storage), value);
+		var element = this._materializeKey(storage);
+		if (!element) { throw 'Your key is empty'; }
+		return storage.set(element, value);
 	}
 
 	isLoading(storage) {

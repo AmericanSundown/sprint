@@ -11,7 +11,7 @@ export class SprintComponent extends React.Component {
 	componentWillMount() {
 		this.props._setState(this.state || {});
 		for (var k in this.props._actions) {
-			if (this.props._actions.hasOwnProperty[k]) {
+			if (this.props._actions.hasOwnProperty(k)) {
 				this[k] = this.props._actions[k];
 			}
 		}
@@ -103,10 +103,12 @@ export function wrap(Component, options) {
 					createAction(k);
 				}
 			}
+
+			_actions.set = (k, v) => options.props[k].set(this._storage, v);
+
 			this._otherParameters = {
 				_setState: this._wrappedSetState,
-				_actions: _actions,
-				set: (k, v) => options.props[k].set(this._storage, v)
+				_actions: _actions
 			};
 
 			var subscribe = (k) => {

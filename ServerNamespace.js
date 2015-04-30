@@ -21,7 +21,7 @@ class ServerNamespace extends Namespace {
 
 		this._namespace = namespace;
 		this._saveArity = saveArity;
-		this._server = server;
+		this._serverContainer = server;
 
 		// _data is locally-modified data
 		// _remote is server data
@@ -34,6 +34,9 @@ class ServerNamespace extends Namespace {
 
 		// Whether a value is in the process of being saved.
 		this._saving = m.hashMap();
+
+		this._customActions = {};
+		this.registerAction('save', this._save.bind(this));
 	}
 
 	get(keys) {
@@ -77,14 +80,28 @@ class ServerNamespace extends Namespace {
 		return m.get(this._saving, m.take(this._saveArity, keys));
 	}
 
-	action(name, params) {
-		return this._server.action(this._namespace, name, m.toJs(params));
+	action(name, data) {
+		if (this._customActions[name]) {
+			return this._customActions[name](data);
+		}
+		else {
+			return this._server(name, params);
+		}
 	}
 
-	save(keys) {
-		if (m.count(keys) < this._saveArity) { throw "Save is not specific enough"; }
+	registerAction(name, func) {
+		this._customActions[name] = func;
+	}
 
-		var keys_to_save = m.take(this._saveArity, keys),
+	_server(name, params) {
+		return this._serverContainer.action(this._namespace, name, m.toJs(params));
+	}
+
+	_save(data) {
+		if (!data.key) { throw "must specify a key to save"; }
+		if (m.count(data.key) < this._saveArity) { throw "Save is not specific enough"; }
+
+		var keys_to_save = m.take(this._saveArity, data.key),
 			local_data = m.getIn(this._local, keys_to_save) || {};
 
 		if (m.get(this._saving, keys_to_save)) { throw "Can't save while another save is in progress"; }
@@ -104,7 +121,7 @@ class ServerNamespace extends Namespace {
 
 		this._saving = m.assoc(this._saving, keys_to_save, true);
 
-		return this.action('save', {
+		return this._server('save', {
 			key: m.toJs(keys_to_save),
 			value: m.toJs(local_data)
 		}).then((newValue) => {
@@ -146,7 +163,7 @@ class ServerNamespace extends Namespace {
 
 		this._loading = m.assoc(this._loading, keys_to_load, STATE_LOADING);
 
-		this.action('load', { keys: m.toJs(keys_to_load) }).then((value) => {
+		this._server('load', { keys: m.toJs(keys_to_load) }).then((value) => {
 			this._loading = m.assoc(this._loading, keys_to_load, STATE_LOADED);
 
 			this._remote = emptyAssocIn(this._remote, keys_to_load, m.toClj(value));
