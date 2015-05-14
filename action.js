@@ -8,13 +8,13 @@ class Action {
 		this.data = data;
 	}
 
-	execute(storage) {
+	resolve(storage) {
 		function resolve(data) {
-			try {
-				if (data.get && typeof data.get == 'function') { return data.get(storage); }
-			}
-			catch (e) {}
+			if (data && data.get && typeof data.get == 'function') { return m.toJs(data.get(storage)); }
 
+			if (m.isMap(data)) {
+				data = m.toJs(data);
+			}
 			if (isObj(data)) {
 				var built = {};
 				for (var k in data) {
@@ -30,8 +30,11 @@ class Action {
 
 			return data;
 		}
+		return resolve(this.data);
+	}
 
-		return storage.getNamespace(this.namespace).action(this.action, resolve(this.data));
+	execute(storage) {
+		return storage.getNamespace(this.namespace).action(this.action, this.resolve(storage));
 	}
 }
 

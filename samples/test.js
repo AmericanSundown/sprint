@@ -1,5 +1,5 @@
 // this part belongs in BlackberrySelector
-import { Server, ServerNamespace, Storage, SprintComponent, wrap, k, a } from '../index';
+import { Server, ServerNamespace, Storage, EventSystem, SprintComponent, wrap, k, a } from '../index';
 import React from 'react';
 import B from 'bluebird';
 
@@ -29,33 +29,59 @@ var ns = new ServerNamespace('app', server, 0, 1);
 storage.register('app', ns);
 window.ns = ns;
 
-class TestComponent extends SprintComponent {
-	handleClick() {
-		this.save();
-	}
+class Input extends SprintComponent {
 	setName(e) {
-		this.set('name', e.target.value);
+		this.set('field', e.target.value);
 	}
 	render() {
 		return <div>
-			<input value={this.props.name} onChange={this.setName.bind(this)} /><br/>
-			<a href="#" onClick={this.handleClick.bind(this)}>Save</a><br />
+			<input value={this.props.field} onChange={this.setName.bind(this)} /><br/>
 			{this.props.name_loading ? 'loading' : 'not loading'}
 		</div>;
 	}
 }
 
 var app_id = k("props", "app_id");
-var T = wrap(TestComponent, {
+
+var AppName = wrap(Input, {
 	props: {
-		"name": k("app", app_id, "name")
+		"field": k("app", app_id, "name")
 	},
 	actions: {
 		"save": a("app", "save", { "key": [ app_id ] })
 	}
 });
 
+var DevEmail = wrap(Input, {
+	props: {
+		"field": k("app", app_id, "dev_email")
+	},
+	actions: {
+		"save": a("app", "save", { "key": [ app_id ] })
+	}
+});
+
+
+class Group extends React.Component {
+	render() {
+		var events = new EventSystem();
+		return (
+			<div>
+				<AppName
+					storage={storage}
+					events={{ 'save': events }}
+					app_id="118785423437725698" />
+				<DevEmail
+					storage={storage}
+					events={{ 'save': events }}
+					app_id="118785423437725698" />
+				<a href="#" onClick={events.trigger}>Save</a><br />
+			</div>);
+	}
+}
+
+
 window.onload = function() {
-	React.render(<T storage={storage} app_id="121345863158072757" />, document.getElementById('test'));
+	React.render(<Group/>, document.getElementById('test'));
 };
 

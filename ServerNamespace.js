@@ -1,6 +1,6 @@
 import m from 'mori';
 import Namespace from './Namespace';
-import { emptyAssocIn, isObj } from './utils';
+import { emptyAssocIn, isObjOrMap } from './utils';
 
 const STATE_LOADING = 'loading';
 const STATE_LOADED = 'loaded';
@@ -39,15 +39,15 @@ class ServerNamespace extends Namespace {
 		// Get data from each source.
 		var data;
 		if ((local = m.getIn(this._local, keys)) !== null) {
-			if (!isObj(local)) { return local; }
+			if (!isObjOrMap(local)) { return local; }
 			data = local;
 		}
 		if ((stage = m.getIn(this._stage, keys)) !== null) {
-			if (!data && !isObj(stage)) { return stage; }
+			if (!data && !isObjOrMap(stage)) { return stage; }
 			data = m.merge(stage, data);
 		}
 		if ((remote = m.getIn(this._remote, keys)) !== null) {
-			if (!data && !isObj(remote)) { return remote; }
+			if (!data && !isObjOrMap(remote)) { return remote; }
 			data = m.merge(remote, data);
 		}
 
@@ -99,7 +99,7 @@ class ServerNamespace extends Namespace {
 
 		if (m.get(this._saving, keys_to_save)) { throw "Can't save while another save is in progress"; }
 
-		// Optimistically update remote cache. Shouldn't need to notify anybody 
+		// Optimistically update remote cache. Shouldn't need to notify anybody
 		// about this change, since the combined result should be the same.
 		// This just allows further local mutation without clobbering when the
 		// database returns.
@@ -130,7 +130,7 @@ class ServerNamespace extends Namespace {
 			var stage = m.getIn(this._stage, keys_to_save),
 				local = m.getIn(this._local, keys_to_save);
 			var new_local = null;
-			if (isObj(stage) && isObj(local)) {
+			if (isObjOrMap(stage) && isObjOrMap(local)) {
 				new_local = m.merge(stage, local);
 			}
 			else if (local !== null) {
