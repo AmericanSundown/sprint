@@ -39,7 +39,7 @@ class Server {
 		this._responses = {};
 
 		superagent.post(this._endpoint).send(actions).end((err, res) => {
-			if (err || res.status != 200) {
+ 			if (err || res.status != 200) {
 				if (!err) { err = new Error("Got status " + res.status); }
 				for (var k in responses) {
 					if (responses.hasOwnProperty(k)) {

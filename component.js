@@ -133,10 +133,10 @@ export function wrap(Component, options) {
 		}
 
 		componentWillUnmount() {
-			m.each(function(v) {
-				var [ k, subscriber ] = v;
-				k.unsubscribe(this._storage, subscriber);
-			}, this._subscribers);
+			m.each(this._subscribers, (v) => {
+				var k = m.first(v), subscriber = m.second(v);
+				options.props[k].unsubscribe(this._storage, subscriber);
+			});
 			this._subscribers = m.hashMap();
 		}
 

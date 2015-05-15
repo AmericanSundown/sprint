@@ -59,7 +59,7 @@ class Key {
 		var new_subs = m.disj(subscriptions, f);
 		if (!m.count(new_subs)) {
 			var subscription_func = m.get(this._subscriptionFuncs, storage);
-			m.each(this.dependencies(), (dep) => storage.unsubscribe(dep, subscription_func));
+			m.each(this.dependencies(storage), (dep) => storage.unsubscribe(dep, subscription_func));
 			m.dissoc(this._subscriptionFuncs, storage);
 			m.dissoc(this._subscriptions, storage);
 		}

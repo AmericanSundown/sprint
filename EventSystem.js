@@ -9,7 +9,9 @@ class EventSystem {
 	register(action, storage) {
 		this.actions.push([ action, storage ]);
 	}
-	trigger() {
+	trigger(e) {
+		if (e && e.preventDefault) { e.preventDefault(); }
+
 		var ops = [], hashes = {};
 
 		for (var k in this.actions) {
