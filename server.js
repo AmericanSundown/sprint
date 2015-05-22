@@ -38,7 +38,7 @@ class Server {
 		this._actions = {};
 		this._responses = {};
 
-		superagent.post(this._endpoint).send(actions).end((err, res) => {
+		superagent.post(this._endpoint).withCredentials().send(actions).end((err, res) => {
  			if (err || res.status != 200) {
 				if (!err) { err = new Error("Got status " + res.status); }
 				for (var k in responses) {
