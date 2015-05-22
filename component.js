@@ -28,6 +28,8 @@ export function wrap(Component, options) {
 		constructor() {
 			super();
 			this.state = {};
+
+			this._stateNamespace = new Namespace();
 		}
 
 		componentWillReceiveProps(nextProps) {
@@ -43,10 +45,7 @@ export function wrap(Component, options) {
 		_wrappedSetState(newState) {
 			for (var k in newState) {
 				if (newState.hasOwnProperty(k)) {
-					if (!m.equals(this._wrappedState[k], newState[k])) {
-						this._stateNamespace.set([ k ], newState[k]);
-						this._wrappedState[k] = newState[k];
-					}
+					this._stateNamespace.set([ k ], newState[k]);
 				}
 			}
 		}
@@ -74,17 +73,13 @@ export function wrap(Component, options) {
 			return false;
 		}
 
-		componentWillMount(wrappedState) {
-			this._wrappedState = wrappedState;
-
+		componentWillMount() {
 			this._storage = this.props.storage.clone();
 			this._propsNamespace = new Namespace();
-			this._stateNamespace = new Namespace();
 			this._storage.register('props', this._propsNamespace);
 			this._storage.register('state', this._stateNamespace);
 
 			this._propsNamespace.set([], this.props);
-			this._stateNamespace.set([], wrappedState);
 
 			this._subscribers = m.hashMap();
 
@@ -114,9 +109,11 @@ export function wrap(Component, options) {
 			_actions.set = (k, v) => options.props[k].setStorage(this._storage, v);
 
 			this._otherParameters = {
-				_setState: this._wrappedSetState,
+				_setState: this._wrappedSetState.bind(this),
 				_actions: _actions
 			};
+
+
 
 			var subscribe = (k) => {
 				if (m.get(k, this._subscribers)) { return; }
@@ -139,6 +136,7 @@ export function wrap(Component, options) {
 			});
 			this._subscribers = m.hashMap();
 		}
+
 
 		render() {
 			return React.createElement(
