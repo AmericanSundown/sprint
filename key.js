@@ -9,7 +9,7 @@ class Key {
 
 	get(storage) {
 		var element = this._materializeKey(storage);
-		if (!element) { element = null }
+		if (!element) { return null; }
 		return storage.get(element);
 	}
 

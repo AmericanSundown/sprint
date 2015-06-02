@@ -1,3 +1,4 @@
+
 import m from 'mori';
 import Namespace from './Namespace';
 import { emptyAssocIn, isObjOrMap } from './utils';
@@ -73,13 +74,19 @@ class ServerNamespace extends Namespace {
 		return m.get(this._saving, m.take(this._saveArity, keys));
 	}
 
-	action(name, data) {
+	action(name, data, update) {
 		if (this._customActions[name]) {
 			return this._customActions[name](data);
 		}
 		else {
-			return this._server(name, params);
+			var local_data = m.getIn(this._local, data.key) || {};
+			this._server(name, {
+				keys: data.key,
+				value: m.toJs(local_data)
+			});
 		}
+
+
 	}
 
 	registerAction(name, func) {

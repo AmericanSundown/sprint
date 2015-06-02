@@ -2,12 +2,20 @@
   "name": "sprint",
   "version": "1.0.0",
   "description": "",
-  "browserify": { "transform": [ "babelify" ] },
+  "browserify": {
+    "transform": [
+      "babelify"
+    ]
+  },
   "main": "index.js",
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "start": "node server.js"
   },
-  "author": "Dmitri Gaskin <dmitrig01@gmail.com>",
+  "author": {
+    "name": "Dmitri Gaskin",
+    "email": "dmitrig01@gmail.com"
+  },
   "license": "ISC",
   "dependencies": {
     "bluebird": "2.9.24",
