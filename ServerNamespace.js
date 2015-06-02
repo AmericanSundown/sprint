@@ -122,7 +122,7 @@ class ServerNamespace extends Namespace {
 		this._saving = m.assoc(this._saving, keys_to_save, true);
 
 		return this._server('save', {
-			key: m.toJs(keys_to_save),
+			keys: m.toJs(keys_to_save),
 			value: m.toJs(local_data)
 		}).then((newValue) => {
 			// Empty stage store, and update remote store.
