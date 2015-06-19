@@ -14,7 +14,7 @@
   },
   "author": {
     "name": "Dmitri Gaskin",
-    "email": "dmitrig01@gmail.com"
+    "email": "dmitri@branchmetrics.io"
   },
   "license": "ISC",
   "dependencies": {
@@ -29,5 +29,8 @@
     "babelify": "^6.0.2",
     "tape": "4.0.0",
     "tape-catch": "1.0.4"
+  },
+  "publishConfig" : {
+    "registry" : "http://admin.branch.io:8081/nexus/content/repositories/npm-internal/"
   }
 }
