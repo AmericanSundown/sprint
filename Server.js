@@ -12,7 +12,7 @@ class Server {
 		this._endpoint = endpoint;
 	}
 
-	action(namespace, action, data) {
+	action(namespace, key, action, data) {
 		var hash = String(m.hash(m.vector(namespace, action, data)));
 		if (this._responses[hash]) { return this._responses[hash].promise; }
 

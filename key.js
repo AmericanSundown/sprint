@@ -123,6 +123,7 @@ class Key {
 		return dependencies;
 	}
 }
+
 class KeyOption {
 	constructor(options) {
 		this.options = options;

@@ -1,35 +1,50 @@
 import m from 'mori';
 
+/**
+ * Root storage object
+ *
+ * Storage doesn't store any data in itself - it only stores the root-level
+ * namespaces; those actually contain the data.
+ */
 class Storage {
-	constructor(_namespaces) {
-		this._namespaces = _namespaces || m.hashMap();
-
-		var _passthrough = (call) => {
-			return (a, b, c, d) => {
-				var ns = m.get(this._namespaces, m.first(a));
-				a = m.rest(a);
-				return ns[call].call(ns, a, b, c, d);
+	constructor() {
+		// Pass through all these calls to functions to the namespace indicated
+		// by the first element of the first parameter (i.e. the first part of
+		// the key).
+		[ 'get', 'set', 'isLoading', 'isError', 'subscribe', 'unsubscribe' ].forEach((func) => {
+			this[func] = (a, b, c, d) => {
+				var nsName = m.first(a), ns = m.get(this._namespaces, nsName);
+				if (!ns) { throw new Error("Namespace " + nsName + " not found in storage."); }
+				return ns[call].call(ns, m.rest(a), b, c, d);
 			};
-		}
-
-		this.get = _passthrough('get');
-		this.set = _passthrough('set');
-		this.isLoading = _passthrough('isLoading');
-		this.isError = _passthrough('isError');
-		this.subscribe = _passthrough('subscribe');
-		this.unsubscribe = _passthrough('unsubscribe');
+		});
 	}
 
-	register(k, v) {
-		this._namespaces = m.assoc(this._namespaces, k, v);
+	/**
+	 * Add a new namespace.
+	 * @param {Namespace} ns a namespace object
+	 */
+	register(ns) {
+		this._namespaces = m.assoc(this._namespaces, ns.name, ns);
 	}
 
-	getNamespace(n) {
-		return m.get(this._namespaces, n);
-	}
-
+	/**
+	 * Clone this storage into a new storage object. The new storage object
+	 * won't be able to namespaces of the old one, however the data within the
+	 * existing namespaces is still shared.
+	 */
 	clone() {
-		return new Storage(this._namespaces);
+		var s = new Storage();
+		m.each(this._namespaces, (k, v) => { s.register(k, v); });
+		return s;
+	}
+
+	/**
+	 * Retrieve a namespace by name.
+	 * @param {String} name the name of the namespace
+	 */
+	getNamespace(name) {
+		return m.get(this._namespaces, name);
 	}
 }
 

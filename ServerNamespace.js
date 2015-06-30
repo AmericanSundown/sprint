@@ -1,4 +1,3 @@
-
 import m from 'mori';
 import Namespace from './Namespace';
 import { emptyAssocIn, isObjOrMap } from './utils';
@@ -7,30 +6,68 @@ const STATE_LOADING = 'loading';
 const STATE_LOADED = 'loaded';
 const STATE_ERROR = 'error';
 
+/**
+ * A 'server' namespaces reads and writes data from/to a server.
+ *
+ * The first important piece that a server can do is 'actions'. An action is
+ * just an RPC, which takes two parameters: the key on which to operate
+ * (obviously this means different things to different RPCs, but seems to be a
+ * common theme among pretty much all RPCs) and some data (optional).
+ * Crucially, in addition to returning some kind of return value, RPCs return a
+ * modification of the data stored by their namespaces (and, while discouraged,
+ * they are allowed to reach into other namespaces as well...).
+ *
+ * Next, key retrieval in server namespaces works slightly differently than
+ * normal namespaces: if the key is not present, it will execute a special
+ * action named 'load' against the key that's being retrieved, and it will use
+ * the resulting mutation to load the key.
+ *
+ * Finally, the server has special 'save' action which, if implemented, will
+ * automatically send back to the server the data which has been `set` when
+ * called.
+ */
 class ServerNamespace extends Namespace {
-	constructor(namespace, server, keyArity, saveArity) {
-		super(keyArity);
-
+	/**
+	 * Create a new server namespace
+	 *
+	 * keyArity means effectively the depth to which to load the key. For
+	 * example, if you use a namespace for all objects of a given type, where
+	 * the first key element is the id and the second a property of an object
+	 * at that id, you may call a get function like this:
+	 * `.get([ '1234', 'name' ])`. If your `keyArity` is 0, it would call load
+	 * on the empty key (`[]`), thus expecting the server to load all the
+	 * objects of this type; if the `keyArity` is 1, it'll call load with
+	 * `[ '1234' ]` as the key, and expect it to load the object at that key;
+	 * and if the keyArity is 2, it would expect the server to load just the
+	 * name (keyArity of 3 or more would throw an error on get).
+	 *
+	 * saveArity works the same way: it denotes where the key stops and the
+	 * data begins.
+	 *
+	 * @param {string} name
+	 * @param {Server} serverContainer a server connector
+	 * @param {int} keyArity
+	 * @param {int} saveArity
+	 */
+	constructor(name, serverContainer, keyArity, saveArity) {
+		super(name);
 		if (typeof keyArity != 'number' || typeof saveArity != 'number') { throw "Must specify a load and save arity"; }
 
-		this._namespace = namespace;
+		this._keyArity = keyArity;
 		this._saveArity = saveArity;
 		this._serverContainer = server;
 
-		// _data is locally-modified data
-		// _remote is server data
-		// _stage is data that's in the process of being saved
+		// _local is locally-modified data (initialized by `super`).
+		// _remote is server data.
+		// _stage is where we store data that's in the process of being saved.
 		this._remote = m.hashMap();
 		this._stage = m.hashMap();
 
-		// Whether a value is loading/loaded/error.
+		// Whether a value is in a loading/loaded/error state.
 		this._loading = m.hashMap();
 
 		// Whether a value is in the process of being saved.
 		this._saving = m.hashMap();
-
-		this._customActions = {};
-		this.registerAction('save', this._save.bind(this));
 	}
 
 	get(keys) {
@@ -75,18 +112,11 @@ class ServerNamespace extends Namespace {
 	}
 
 	action(name, data, update) {
-		if (this._customActions[name]) {
-			return this._customActions[name](data);
-		}
-		else {
-			var local_data = m.getIn(this._local, data.key) || {};
-			this._server(name, {
-				keys: data.key,
-				value: m.toJs(local_data)
-			});
-		}
-
-
+		var local_data = m.getIn(this._local, data.key) || {};
+		this._server(name, {
+			keys: data.key,
+			value: m.toJs(local_data)
+		});
 	}
 
 	registerAction(name, func) {

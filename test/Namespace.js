@@ -4,7 +4,7 @@ import Namespace from '../Namespace';
 
 test('Namespace', (t) => {
 	var s;
-	function setup() { s = new Namespace(1); };
+	function setup() { s = new Namespace('test'); };
 
 	t.test('basic get and set works', (t) => {
 		setup();
