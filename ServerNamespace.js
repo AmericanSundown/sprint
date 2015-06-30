@@ -70,68 +70,85 @@ class ServerNamespace extends Namespace {
 		this._saving = m.hashMap();
 	}
 
-	get(keys) {
+	/**
+	 * Retrieve a value for a key.
+	 * @param {*[]} key
+	 */
+	get(key) {
 		var options = [];
 		var local, stage, remote;
 
-		// Get data from each source.
-		var data;
-		if ((local = m.getIn(this._local, keys)) !== null) {
+		// Get data from each source - starting from local, fallig back to
+		// stage, and finally to remote. If any one returns a plain value, just
+		// pass it through; if they return an object, merge it in, with local
+		// taking precedence over stage, taking precedence over remote.
+		var data = null;
+		if ((local = m.getIn(this._local, key)) !== null) {
 			if (!isObjOrMap(local)) { return local; }
 			data = local;
 		}
-		if ((stage = m.getIn(this._stage, keys)) !== null) {
+		if ((stage = m.getIn(this._stage, key)) !== null) {
 			if (!data && !isObjOrMap(stage)) { return stage; }
 			data = m.merge(stage, data);
 		}
-		if ((remote = m.getIn(this._remote, keys)) !== null) {
+		if ((remote = m.getIn(this._remote, key)) !== null) {
 			if (!data && !isObjOrMap(remote)) { return remote; }
 			data = m.merge(remote, data);
 		}
 
 		// If the data is here, return it. Otherwise, load it.
-		if (data) {
+		if (data || m.get(this._loading, this._loaderKey(key)) == STATE_LOADED) {
 			return data;
 		}
 		else {
-			this._load(keys);
+			this._load(key);
 			return null;
 		}
 	}
 
-	isLoading(keys) {
-		return m.get(this._loading, this._loaderKeys(keys)) == STATE_LOADING;
+	/**
+	 * Whether the key is loading.
+	 */
+	isLoading(key) {
+		return m.get(this._loading, this._loaderKey(key)) == STATE_LOADING;
 	}
 
-	isError(keys) {
-		return m.get(this._loading, this._loaderKeys(keys)) == STATE_ERROR;
+	/**
+	 * Whether there was an error loading the key.
+	 */
+	isError(key) {
+		return m.get(this._loading, this._loaderKey(key)) == STATE_ERROR;
 	}
 
+	/**
+	 * Whether the current key is in the process of being saved.
+	 */
 	isSaving(keys) {
 		return m.get(this._saving, m.take(this._saveArity, keys));
 	}
 
-	action(name, data, update) {
-		var local_data = m.getIn(this._local, data.key) || {};
-		this._server(name, {
-			keys: data.key,
-			value: m.toJs(local_data)
-		});
+	/**
+	 * Fire a server action.
+	 * @param {string} action the name of the action
+	 * @param {*[]} key the key at which to fire the action
+	 * @param {*} data any action-related data
+	 */
+	action(action, key, data) {
+		// Hard-coded special case
+		if (action == 'save') { this._save(key); }
+		else { this._action(action, key, data); }
 	}
 
-	registerAction(name, func) {
-		this._customActions[name] = func;
+	_action(action, key, data) {
+		// TODO: handle statemutations
+		return this._serverContainer.action(this.name, action, key, m.toJs(data));
 	}
 
-	_server(name, params) {
-		return this._serverContainer.action(this._namespace, name, m.toJs(params));
-	}
+	_save(key) {
+		if (!key) { throw "must specify a key to save"; }
+		if (m.count(key) < this._saveArity) { throw "Save is not specific enough"; }
 
-	_save(data) {
-		if (!data.key) { throw "must specify a key to save"; }
-		if (m.count(data.key) < this._saveArity) { throw "Save is not specific enough"; }
-
-		var keys_to_save = m.take(this._saveArity, data.key),
+		var keys_to_save = m.take(this._saveArity, key),
 			local_data = m.getIn(this._local, keys_to_save) || {};
 
 		if (m.get(this._saving, keys_to_save)) { throw "Can't save while another save is in progress"; }
@@ -151,63 +168,58 @@ class ServerNamespace extends Namespace {
 
 		this._saving = m.assoc(this._saving, keys_to_save, true);
 
-		return this._server('save', {
-			keys: m.toJs(keys_to_save),
-			value: m.toJs(local_data)
-		}).then((newValue) => {
-			// Empty stage store, and update remote store.
+		return this._server('save', key, m.toJs(local_data)).then((newValue) => {
+			// Empty stage store – remote store should have been updated from under us.
 			this._stage = emptyAssocIn(this._stage, keys_to_save, null);
-			this._remote = emptyAssocIn(this._remote, keys_to_save, m.toClj(newValue));
-
 			this._saving = m.assoc(this._saving, keys_to_save, false);
-
 			this._notify(keys_to_save);
 		}, (err) => {
-			// Put stage store back into local and empty it.
+			// Something went wrong, so abort: put stage store back into local,
+			// and empty it.
 			var stage = m.getIn(this._stage, keys_to_save),
 				local = m.getIn(this._local, keys_to_save);
 			var new_local = null;
-			if (isObjOrMap(stage) && isObjOrMap(local)) {
-				new_local = m.merge(stage, local);
-			}
-			else if (local !== null) {
-				new_local = local;
-			}
-			else {
-				new_local = stage;
-			}
+			if (isObjOrMap(stage) && isObjOrMap(local)) { new_local = m.merge(stage, local); }
+			else if (local !== null) { new_local = local; }
+			else { new_local = stage; }
 			this._local = emptyAssocIn(this._remote, keys_to_save, new_local);
 			this._stage = emptyAssocIn(this._stage, keys_to_save, null);
 
 			this._saving = m.assoc(this._saving, keys_to_save, false);
 
 			this._notify(keys_to_save);
+
+			// Rethrow error.
 			throw err;
 		});
 	}
 
-	_load(keys) {
-		if (m.get(this._loading, this._loaderKeys(keys))) { return; }
+	/**
+	 * If we tried to get a key which hasn't yet been loaded yet, load it.
+	 */
+	_load(key) {
+		var key_to_load = this._loaderKey(key);
+		// if it's in any kind of loading state, don't load it
+		if (m.get(this._loading, key_to_load)) { return; }
 
-		var keys_to_load = this._loaderKeys(keys);
+		this._loading = m.assoc(this._loading, key_to_load, STATE_LOADING);
 
-		this._loading = m.assoc(this._loading, keys_to_load, STATE_LOADING);
-
-		this._server('load', { keys: m.toJs(keys_to_load) }).then((value) => {
-			this._loading = m.assoc(this._loading, keys_to_load, STATE_LOADED);
-
-			this._remote = emptyAssocIn(this._remote, keys_to_load, m.toClj(value));
-			this._notify(keys_to_load);
-
+		this._server('load', m.toJs(key_to_load), null).then((value) => {
+			// The server action will change the data, but we need to change
+			// the loading state. Assume that the key requested was actually
+			// the key returned.
+			this._loading = m.assoc(this._loading, key_to_load, STATE_LOADED);
+			this._notify(key_to_load);
 		}, () => {
-			this._loading = m.assoc(this._loading, keys_to_load, STATE_ERROR);
+			this._loading = m.assoc(this._loading, key_to_load, STATE_ERROR);
+			this._notify(key_to_load);
 		});
 	}
 
-	_loaderKeys(keys) {
-		if (m.count(keys) < this._keyArity) { throw "Load is not specific enough"; }
+	_loaderKey(key) {
+		if (m.count(key) < this._keyArity) { throw("Load is not specific enough; expecting a composite key of " + this._keyArity + " elements, but got " + m.count(keys) + " instead (" + key + ")"; }
 
-		return m.into(m.vector(), m.take(this._keyArity, keys));
+		return m.into(m.vector(), m.take(this._keyArity, key));
 	}
 }
 

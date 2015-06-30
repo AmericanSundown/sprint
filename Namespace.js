@@ -44,8 +44,8 @@ class Namespace {
 	}
 
 	/**
-	 * Retrieve a composite key
-	 * @param {array<any>} key
+	 * Retrieve a value for a (composite) key
+	 * @param {*[]} key
 	 */
 	get(key) {
 		return m.getIn(this._local, key);
@@ -53,8 +53,8 @@ class Namespace {
 
 	/**
 	 * Set a composite key
-	 * @param {array<any>} key
-	 * @param {any} value
+	 * @param {*[]} key
+	 * @param {*} value
 	 */
 	set(key, value) {
 		this._local = emptyAssocIn(this._local, key, m.toClj(value));
@@ -63,7 +63,7 @@ class Namespace {
 
 	/**
 	 * Whether or not the key is in a loading state.
-	 * @param {array<any>} key
+	 * @param {*[]} key
 	 */
 	isLoading(key) {
 		// For a client-side namespace, it will never load.
@@ -72,7 +72,7 @@ class Namespace {
 
 	/**
 	 * Whether or not the key is in an error state.
-	 * @param {array<any>} key
+	 * @param {*[]} key
 	 */
 	isError(key) {
 		// For a client-side namespace, it will never be an error.
