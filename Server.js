@@ -95,7 +95,6 @@ class Server {
 				for (var k in res.body) {
 					if (res.body.hasOwnProperty(k)) {
 						var value = res.body[k];
-						// console.log('responses!', response.value)
 						if (response.error) { responses[k].reject(response.error); }
 						else { responses[k].resolve(response.value); }
 					}
