@@ -9,8 +9,8 @@ import m from 'mori';
 class Storage {
 	constructor() {
 		// Pass through all these calls to functions to the namespace indicated
-		// by the first element of the first parameter (i.e. the first part of
-		// the key).
+		// by the first element of the first parameter (i.e. the first element
+		// of the key).
 		[ 'get', 'set', 'isLoading', 'isError', 'subscribe', 'unsubscribe' ].forEach((func) => {
 			this[func] = (a, b, c, d) => {
 				var nsName = m.first(a), ns = m.get(this._namespaces, nsName);

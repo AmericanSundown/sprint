@@ -39,8 +39,8 @@ class Namespace {
 		// Actual data.
 		this._local = m.hashMap();
 
-		// Subscribers is a hash of vec[key components] -> set[subscription funcs]
-		this._subscribers = m.hashMap();
+		// Subscribers is a set of vec[key, func]
+		this._subscribers = m.set();
 	}
 
 	/**
@@ -85,11 +85,8 @@ class Namespace {
 	 * @param {function} fn subscription function
 	 */
 	subscribe(key, fn) {
-		this._subscribers = m.reduce(
-			(acc, k) => m.updateIn(this._subscribers, k, (v) => m.conj(v || m.set(), fn)),
-			this._subscribers,
-			this._keyPath(key)
-		);
+		// TODO: we could probably store/retrieve these in a more efficient way
+		this._subscribers = m.conj(this._subcribers, m.vec(m.toClj(key), fn));
 	}
 
 	/**
@@ -98,31 +95,20 @@ class Namespace {
 	 * @param {function} fn
 	 */
 	unsubscribe(keys, fn) {
-		this._subscribers = m.reduce(
-			(acc, k) => m.updateIn(this._subscribers, k, (v) => m.disj(v, fn)),
-			this._subscribers,
-			this._keyPath(key)
-		);
-	}
-
-	/**
-	 * Get the path of a key: [a b c] -> [[] [a] [a b] [a b c]]
-	 */
-	_keyPath(key) {
-		return m.reduce(
-			(acc, element) => m.conj(acc, m.conj(m.last(acc), element)),
-			m.vector(m.vector()), // Notify the empty key :-)
-			key
-		);
+		this._subscribers = m.disj(this._subcribers, m.vec(m.toClj(key), fn));
 	}
 
 	/**
 	 * Notify the subscribers to each key.
 	 */
-	_notify(keys) {
-		// Go through each key combo, then each subscriber, and trigger them.
-		m.each(_keyPath(keys), (keyCombo) => {
-			m.each(m.get(this._subscribers, keyCombo), (subscriber) => subscriber());
+	_notify(key) {
+		// Go through each subscriber, see if they match the key, and notify.
+		m.each(this._subscribers, (subscriber) => {
+			[ subscriberKey, fn ] = m.toJs(subscriber)
+			var comparisonLength = Math.min(m.count(subscriberKey), m.count(key));
+			if (m.equals(m.take(comparisonLength, subscriberKey), m.take(comparisonLength, key))) {
+				fn();
+			}
 		});
 	}
 }

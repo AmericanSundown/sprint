@@ -9,6 +9,20 @@ export function emptyAssocIn(obj, keys, value) {
 }
 
 /**
+ * Same as updateIn, but works with empty keys.
+ */
+export function emptyUpdateIn(obj, keys, fn) {
+	if (!m.count(keys)) {
+		var args = Array.prototype.slice.call(arguments, 3);
+		args.unshift(obj);
+		return fn.apply(null, args);
+	}
+	else {
+		return m.updateIn.apply(m, Array.prototype.slice.call(arguments, 0));
+	}
+}
+
+/**
  * Merge two POJOs
  * @param {Object} a
  * @param {Object} b

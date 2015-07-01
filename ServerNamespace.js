@@ -133,15 +133,15 @@ class ServerNamespace extends Namespace {
 	 * @param {*[]} key the key at which to fire the action
 	 * @param {*} data any action-related data
 	 */
-	action(action, key, data) {
+	action(key, action, data) {
 		// Hard-coded special case
 		if (action == 'save') { this._save(key); }
 		else { this._action(action, key, data); }
 	}
 
-	_action(action, key, data) {
+	_action(key, action, data) {
 		// TODO: handle statemutations
-		return this._serverContainer.action(this.name, action, key, m.toJs(data));
+		return this._serverContainer.action(this.name, key, action, m.toJs(data));
 	}
 
 	_save(key) {
@@ -168,7 +168,7 @@ class ServerNamespace extends Namespace {
 
 		this._saving = m.assoc(this._saving, keys_to_save, true);
 
-		return this._server('save', key, m.toJs(local_data)).then((newValue) => {
+		return this._action(key, 'save', m.toJs(local_data)).then((newValue) => {
 			// Empty stage store – remote store should have been updated from under us.
 			this._stage = emptyAssocIn(this._stage, keys_to_save, null);
 			this._saving = m.assoc(this._saving, keys_to_save, false);
@@ -204,7 +204,7 @@ class ServerNamespace extends Namespace {
 
 		this._loading = m.assoc(this._loading, key_to_load, STATE_LOADING);
 
-		this._server('load', m.toJs(key_to_load), null).then((value) => {
+		this._action(key_to_load, 'load', null).then((value) => {
 			// The server action will change the data, but we need to change
 			// the loading state. Assume that the key requested was actually
 			// the key returned.

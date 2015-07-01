@@ -8,25 +8,25 @@ class Server {
 		this._responses = {};
 
 		this.timeout = null;
-		this._flushAfter = flushAfter || 10;
+		this._flushAfter = flushAfter || 1;
 		this._endpoint = endpoint;
 	}
 
 	action(namespace, key, action, data) {
-		var hash = String(m.hash(m.vector(namespace, action, data)));
+		// For each request, only send a single request.
+		var hash = String(m.hash(m.toClj([ namespace, key, action, data ])));
 		if (this._responses[hash]) { return this._responses[hash].promise; }
 
-		var resolve,
-			reject,
-			promise = new B(function(res, rej) { resolve = res; reject = rej; });
+		var resolve, reject, promise = new B(function(res, rej) { resolve = res; reject = rej; });
 
-		this._actions[hash] = [ namespace, action, data ];
+		this._actions[hash] = [ namespace, key, action, data ];
 		this._responses[hash] = {
 			resolve: resolve,
 			reject: reject,
 			promise: promise
 		};
 
+		// Debounce
 		if (this._timeout) { clearTimeout(this._timeout); }
 		this._timeout = setTimeout(() => this._flush(), this._flushAfter);
 
@@ -40,7 +40,7 @@ class Server {
 
 		superagent.post(this._endpoint).withCredentials().send(actions).end((err, res) => {
  			if (err || res.status != 200) {
-				if (!err) { err = new Error("Got status " + res.status); }
+				if (!err) { err = new Error("Got status " + res.status + " with body " + (res.text || res.body)); }
 				for (var k in responses) {
 					if (responses.hasOwnProperty(k)) {
 						responses[k].reject(err);
