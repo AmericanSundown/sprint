@@ -27,14 +27,15 @@ class PollingServerNamespace extends ServerNamespace {
 	set() { throw new Error('Cannot set property of read-only namespace'); }
 	_save() { throw new Error('Cannot save read-only namespace'); }
 
-	// When the first subscription happens, start polling; when the last
-	// unsubscribe happens, stop polling.
+	// When the first subscription happens, set an interval to start polling
 	subscribe(key, fn) {
 		if (!this._interval) {
-			this._interval = setInterval(() => { this._poll(); }, this._intervalMs);
+			this._interval = setInterval(() => this._poll(), this._intervalMs);
 		}
 		super(key, fn);
 	}
+
+	// When there's no one else subscribed, we can clear the interval.
 	unsubscribe(key, fn) {
 		super(key, fn);
 		if (!m.count(this._subscribers)) {
@@ -66,4 +67,4 @@ class PollingServerNamespace extends ServerNamespace {
 	}
 }
 
-export default ReadOnlyServerNamespace;
+export default PollingServerNamespace;
