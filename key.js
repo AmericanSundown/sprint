@@ -151,7 +151,7 @@ class Key {
 
 		if (this.materialize(storage)) {
 			// Include the current key in the list of dependencies.
-			dependencies = m.conj(dependencies, this.materialize(storage));
+			dependencies = m.conj(dependencies, m.into(m.vector(), this.materialize(storage)));
 		}
 
 		return dependencies;
@@ -219,7 +219,7 @@ class Key {
 		// If there aren't any more subscriptions left, unsubscribe the
 		// underlying subscribers from the storage and remove them from this
 		// key's subscriptions.
-		if (!m.count(m.get(this._subscriptions, storage)) {
+		if (!m.count(m.get(this._subscriptions, storage))) {
 			var subscription_func = m.get(this._subscriptionFuncs, storage);
 			m.each(this.dependencies(storage), (dep) => storage.unsubscribe(dep, subscription_func));
 
@@ -242,7 +242,7 @@ class KeyOption {
 	// Dependencies are just the dependencies of the component keys.
 	dependencies(storage) {
 		return m.union.apply(m, this.options.map((opt) => {
-			if (isKey(this.elements[i])) { return opt.dependencies(storage); }
+			if (isKey(opt)) { return opt.dependencies(storage); }
 			else { return m.set(); }
 		}));
 	}

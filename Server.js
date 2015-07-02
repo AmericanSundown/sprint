@@ -58,7 +58,7 @@ class Server {
 			resolve: resolve,
 			reject: reject,
 			promise: promise,
-			data: [ namespace, key, action, data ]
+			data: [ namespace, m.toJs(key), action, data ]
 		};
 
 		// Debounce

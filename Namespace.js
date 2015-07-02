@@ -1,5 +1,5 @@
 import m from 'mori';
-import { emptyAssocIn } from './utils';
+import { emptyAssocIn, emptyGetIn } from './utils';
 
 /**
  * Generic namespace base class, as well as client-side namespace.
@@ -86,7 +86,7 @@ class Namespace {
 	 */
 	subscribe(key, fn) {
 		// TODO: we could probably store/retrieve these in a more efficient way
-		this._subscribers = m.conj(this._subcribers, m.vec(m.toClj(key), fn));
+		this._subscribers = m.conj(this._subcribers, m.vector(m.toClj(key), fn));
 	}
 
 	/**
@@ -94,8 +94,8 @@ class Namespace {
 	 * @param {array<string>} key
 	 * @param {function} fn
 	 */
-	unsubscribe(keys, fn) {
-		this._subscribers = m.disj(this._subcribers, m.vec(m.toClj(key), fn));
+	unsubscribe(key, fn) {
+		this._subscribers = m.disj(this._subcribers, m.vector(m.toClj(key), fn));
 	}
 
 	/**
@@ -104,7 +104,7 @@ class Namespace {
 	_notify(key) {
 		// Go through each subscriber, see if they match the key, and notify.
 		m.each(this._subscribers, (subscriber) => {
-			[ subscriberKey, fn ] = m.toJs(subscriber)
+			var [ subscriberKey, fn ] = m.toJs(subscriber);
 			var comparisonLength = Math.min(m.count(subscriberKey), m.count(key));
 			if (m.equals(m.take(comparisonLength, subscriberKey), m.take(comparisonLength, key))) {
 				fn();

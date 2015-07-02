@@ -30,14 +30,17 @@ test('ServerNamespace loading', (t) => {
 		t.ok(true, 'passed');
 	});
 
-	t.test('subscribe/notify works on server function - called twice with arty 2', (t) => {
-		t.plan(8);
-		var server = { action: (ns, call, data) => {
-			function valid(k) { return m.equals(m.toClj(data.keys), m.toClj([ 'a', k ])); }
+	t.test('subscribe/notify works on server function - called twice with arity 2', (t) => {
+		t.plan(12);
+		var server = { action: (ns, key, action, data) => {
+			function valid(k) { return ; }
 
-			// This should be called twice
-			t.ok(valid('b') || valid('c'), 'correct keys passed in');
-			return B.delay(1).return('abc');
+			// These should all be called twice
+			t.equal(ns, 'test', 'ns correct');
+			t.ok(arrayEq(key, [ 'a', 'b' ]) || arrayEq(key, [ 'a', 'c' ]), 'correct keys passed in');
+			t.equal(action, 'load', 'action correct');
+
+			return B.delay(1).return({ '$set': [ { 'key': key, 'value': 'abc' } ] });
 		} };
 
 		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 2, 2);
@@ -58,10 +61,12 @@ test('ServerNamespace loading', (t) => {
 
 	t.test('subscribe/notify works on server function - called once with arity 1', (t) => {
 		t.plan(6);
-		var server = { action: (ns, call, data) => {
-			t.ok(m.equals(m.toClj(data.keys), m.toClj([ 'a' ])), 'keys correct');
+		var server = { action: (ns, key, action, data) => {
+			t.ok(m.equals(m.toClj(key), m.toClj([ 'a' ])), 'keys correct');
 
-			return B.delay(1).return({ 'b': 1, 'c': 2 });
+			return B.delay(1).return({
+				'$set': [ { 'key': key, 'value': { 'b': 1, 'c': 2 } } ]
+			});
 		} };
 
 		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 2);
@@ -80,16 +85,19 @@ test('ServerNamespace loading', (t) => {
 
 	t.test('isLoading works', (t) => {
 		t.plan(20);
-		var server = { action: (ns, call, data) => {
-			return B.delay(data.keys[1] == 'b' ? 5 : 10).return({ 'd': 'e' });
+		var server = { action: (ns, key, action, data) => {
+			var k = m.toJs(key);
+			return B.delay(k[1] == 'b' ? 5 : 10).return({
+				'$set': [ { 'key': k, 'value': { 'd': 'e' } } ]
+			});
 		} };
 		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 2, 2);
 
 		function verifyLoadingState(ab, ac, msg) {
-			t.ok(s.isLoading([ 'a', 'b' ]) == ab, msg + ' ab');
-			t.ok(s.isLoading([ 'a', 'b', 'd' ]) == ab, msg + ' abd');
-			t.ok(s.isLoading([ 'a', 'c' ]) == ac, msg + ' ac');
-			t.ok(s.isLoading([ 'a', 'c', 'd' ]) == ac, msg + 'acd');
+			t.equal(s.isLoading([ 'a', 'b' ]), ab, msg + ' ab');
+			t.equal(s.isLoading([ 'a', 'b', 'd' ]), ab, msg + ' abd');
+			t.equal(s.isLoading([ 'a', 'c' ]), ac, msg + ' ac');
+			t.equal(s.isLoading([ 'a', 'c', 'd' ]), ac, msg + ' acd');
 		}
 
 		verifyLoadingState(false, false, 'start');
@@ -113,38 +121,40 @@ test('ServerNamespace loading', (t) => {
 }, { timeout: 500 });
 
 
-
 test('ServerNamespace saving', (t) => {
 	var s, ServerNamespace;
 
 	t.test('basic data type get/save works', (t) => {
 		t.plan(4);
-		var server = { action: (ns, call, data) => {
-			t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
-			t.ok(data.value == 'b', 'value is correct');
-			return new B.delay(5).return('c');
+		var server = { action: (ns, key, action, data) => {
+			t.ok(arrayEq(key, [ 'a' ]), 'key is correct');
+			t.ok(data == 'b', 'value is correct');
+			return new B.delay(5).return({
+				'$set': [ { 'key': [ 'a' ], 'value': 'c' } ]
+			});
 		} };
 		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
 
 		s.set([ 'a' ], 'b');
-		s.save([ 'a' ]).then(function() {
+		s.action([ 'a' ], 'save').then(function() {
 			t.ok(s.get([ 'a' ]) == 'c', 'saved data correct');
 		});
 		t.ok(s.get([ 'a' ]) == 'b', 'Staging data correct');
 	});
 
+
 	t.test('basic data type get/save works with override', (t) => {
 		t.plan(5);
-		var server = { action: (ns, call, data) => {
-			t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
-			t.ok(data.value == 'b', 'value is correct');
+		var server = { action: (ns, key, action, data) => {
+			t.ok(arrayEq(key, [ 'a' ]), 'key is correct');
+			t.ok(data == 'b', 'value is correct');
 			return new B.delay(5).return('c');
 		} };
 
 		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
 
 		s.set([ 'a' ], 'b');
-		s.save([ 'a' ]).then(() => {
+		s.action([ 'a' ], 'save').then(() => {
 			t.ok(s.get([ 'a' ]) == 'd', 'saved data correctly overridden');
 		});
 		t.ok(s.get([ 'a' ]) == 'b', 'staging data correct');
@@ -154,13 +164,15 @@ test('ServerNamespace saving', (t) => {
 
 	t.test('basic data type get/save with error', (t) => {
 		t.plan(6);
-		var server = { action: (ns, call, data) => {
-			if (call == 'load') {
-				return B.resolve('a');
+		var server = { action: (ns, key, action, data) => {
+			if (action == 'load') {
+				return B.resolve({
+					'$set': [ { key: [ 'a' ], value: 'a' } ]
+				});
 			}
 			else {
-				t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
-				t.ok(data.value == 'b', 'value is correct');
+				t.ok(arrayEq(key, [ 'a' ]), 'key is correct');
+				t.ok(data == 'b', 'value is correct');
 				return new B.delay(5).throw('c');
 			}
 		} };
@@ -175,24 +187,27 @@ test('ServerNamespace saving', (t) => {
 			s.set([ 'a' ], 'b');
 			t.ok(s.get([ 'a' ]) == 'b', 'local override is correct');
 
-			s.save([ 'a' ]).then(() => {
+			s.action([ 'a' ], 'save').then(() => {
 				t.ok(false, 'should have errored');
 			}, () => {
 				t.ok(s.get([ 'a' ]) == 'b', 'reverts to local override');
 			});
-			t.ok(s.get([ 'a' ]) == 'b', 'keeps local override');
+
+			t.ok(s.get([ 'a' ]) == 'b', 'keeps local override temporarily');
 		}, 1);
 	});
 
 	t.test('basic data type get/save works with error & override', (t) => {
 		t.plan(7);
-		var server = { action: (ns, call, data) => {
-			if (call == 'load') {
-				return B.resolve('a');
+		var server = { action: (ns, key, action, data) => {
+			if (action == 'load') {
+				return B.resolve({
+					'$set': [ { 'key': key, 'value': 'a' } ]
+				});
 			}
 			else {
-				t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
-				t.ok(data.value == 'b', 'value is correct');
+				t.ok(arrayEq(key, [ 'a' ]), 'key is correct');
+				t.ok(data == 'b', 'value is correct');
 				return new B.delay(5).throw('c');
 			}
 		} };
@@ -207,7 +222,7 @@ test('ServerNamespace saving', (t) => {
 			s.set([ 'a' ], 'b');
 			t.ok(s.get([ 'a' ]) == 'b', 'local override is correct');
 
-			s.save([ 'a' ]).then(() => {
+			s.action([ 'a' ], 'save').then(() => {
 				t.ok(false, 'should have errored');
 			}, () => {
 				t.ok(s.get([ 'a' ]) == 'c', 'keeps new local override');
@@ -220,36 +235,42 @@ test('ServerNamespace saving', (t) => {
 
 	t.test('map get/save works', (t) => {
 		t.plan(4);
-		var server = { action: (ns, call, data) => {
-			t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
-			t.ok(m.equals(m.toClj(data.value), d), 'value is correct');
-			return new B.delay(5).return(d2);
-		} };
-
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
 		var d = m.toClj({ 1: 'a', 2: 'b' }),
 			d2 = { 1: 'b', 2: 'c' };
 
+		var server = { action: (ns, key, action, data) => {
+			t.ok(arrayEq(key, [ 'a' ]), 'key is correct');
+			t.ok(m.equals(m.toClj(data), d), 'value is correct');
+			return new B.delay(5).return({
+				'$set': [ { 'key': key, 'value': d2 } ]
+			});
+		} };
+
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
+
 		s.set([ 'a' ], d);
-		s.save([ 'a' ]).then(function() {
+		s.action([ 'a' ], 'save').then(function() {
 			t.ok(m.equals(s.get([ 'a' ]), m.toClj(d2)), 'saved data correct');
 		});
 		t.ok(m.equals(s.get([ 'a' ]), d), 'Staging data correct');
 	});
 
-
 	t.test('map get/save works with override', (t) => {
 		t.plan(5);
-		var server = { action: (ns, call, data) => {
-			t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
-			t.ok(m.equals(m.toClj(data.value), d), 'value is correct');
-			return new B.delay(5).return({ "1": 'b', "2": 'c' });
-		} };
-		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
+
 		var d = m.toClj({ "1": 'a', "2": 'b' });
 
+		var server = { action: (ns, key, action, data) => {
+			t.ok(arrayEq(key, [ 'a' ]), 'key is correct');
+			t.ok(m.equals(m.toClj(data), d), 'value is correct');
+			return new B.delay(5).return({
+				'$set': [ { 'key': key, 'value': { "1": 'b', "2": 'c' } } ]
+			});
+		} };
+		var ServerNamespace = require('../ServerNamespace'), s = new ServerNamespace('test', server, 1, 1);
+
 		s.set([ 'a' ], d);
-		s.save([ 'a' ]).then(() => {
+		s.action([ 'a' ], 'save').then(() => {
 			t.ok(m.equals(s.get([ 'a' ]), m.toClj({ "1": 'c', "2": 'c' })), 'saved data correctly overridden');
 		});
 		t.ok(m.equals(s.get([ 'a' ]), d), 'staging data correct');
@@ -260,13 +281,15 @@ test('ServerNamespace saving', (t) => {
 
 	t.test('basic data type get/save with error', (t) => {
 		t.plan(6);
-		var server = { action: (ns, call, data) => {
-			if (call == 'load') {
-				return B.resolve({ "1": "b", "2": "d" });
+		var server = { action: (ns, key, action, data) => {
+			if (action == 'load') {
+				return B.resolve({
+					'$set': [ { 'key': key, 'value': { "1": "b", "2": "d" } } ]
+				});
 			}
 			else {
-				t.ok(arrayEq(data.key, [ 'a' ]), 'key is correct');
-				t.ok(m.equals(m.toClj(data.value), m.toClj({ '1': 'c' })), 'value is correct');
+				t.ok(arrayEq(key, [ 'a' ]), 'key is correct');
+				t.ok(m.equals(m.toClj(data), m.toClj({ '1': 'c' })), 'value is correct');
 				return new B.delay(5).throw('c');
 			}
 		} };
@@ -281,7 +304,7 @@ test('ServerNamespace saving', (t) => {
 			s.set([ 'a', '1' ], 'c');
 			t.ok(s.get([ 'a', '1' ]) == 'c', 'local override is correct');
 
-			s.save([ 'a' ]).then(() => {
+			s.action([ 'a' ], 'save').then(() => {
 				t.ok(false, 'should have errored');
 			}, () => {
 				t.ok(m.equals(s.get([ 'a' ]), m.toClj({ '1': 'c', '2': 'd' })), 'reverts to local override');
@@ -289,5 +312,4 @@ test('ServerNamespace saving', (t) => {
 			t.ok(m.equals(s.get([ 'a' ]), m.toClj({ '1': 'c', '2': 'd' })), 'keeps local override');
 		}, 1);
 	});
-
 }, { timeout: 500 });

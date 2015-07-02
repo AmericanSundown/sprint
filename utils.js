@@ -26,7 +26,7 @@ export function emptyUpdateIn(obj, keys, fn) {
  * Same as getIn, but works with empty keys.
  */
 export function emptyGetIn(obj, keys) {
-	if (!m.count(keys)) { return value; }
+	if (!m.count(keys)) { return obj; }
 	return m.getIn(obj, keys);
 }
 

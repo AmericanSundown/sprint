@@ -29,23 +29,36 @@ At the time of writing, Relay is not available to the public, so obviously we ca
 
 ### [Meteor](https://meteor.com/)
 
-We were inspired by Meteor's client-side data storage.
+We were inspired by Meteor's client-side data storage. and seamless server coordination – you don't have to do any work to get server data into the client. While with Sprint, you do have to do some server-side work, it is quite minimal compared to other approaches; and writing client-side models is a thing of the past.
 
 ### [mori](http://swannodette.github.io/mori/)
 
-
+We make extensive use of mori's immutable data structures, to allow better state tracking and change tracking. Pretty much any data you get out of Sprint will be a mori data structure – so it's worth learning!
 
 ## Sprint
 
+Sprint
+
 ### Global storage
 
-### Keys
+
 
 ### Namespaces
 
+
+
 #### Server Namespaces
+
+
+
+### Keys
+
+
 
 ### Actions
 
+
+
 ### Component wrapper
+
 

@@ -54,25 +54,30 @@ test('Namespace', (t) => {
 		t.end();
 	});
 
-	t.test('subscribe/notify works', (t) => {
-		setup();
-		t.plan(2);
-		s.subscribe([ 'a', 'b' ], () => {
-			t.ok(true, 'was notified');
-		});
-		s.set([ 'a', 'b' ], 'b');
-		s.set([ 'a', 'b' ], 'c');
-		s.set([ 'a', 'c' ], 'c');
-	});
+	// Subscribe/notify
+	[
+		{ subscribe: [], set: [], shouldNotify: true },
+		{ subscribe: [], set: [ 'a' ], shouldNotify: true },
+		{ subscribe: [], set: [ 'a', 'b' ], shouldNotify: true },
+		{ subscribe: [ 'a' ], set: [], shouldNotify: true },
+		{ subscribe: [ 'a' ], set: [ 'a' ], shouldNotify: true },
+		{ subscribe: [ 'a' ], set: [ 'a', 'b' ], shouldNotify: true },
+		{ subscribe: [ 'a', 'b' ], set: [], shouldNotify: true },
+		{ subscribe: [ 'a', 'b' ], set: [ 'a' ], shouldNotify: true },
+		{ subscribe: [ 'a', 'b' ], set: [ 'a', 'b' ], shouldNotify: true },
+		{ subscribe: [ 'a', 'b' ], set: [ 'a', 'c' ], shouldNotify: false }
+	].forEach((c, i) => {
+		t.test('subscribe/notify works case ' + i, (t) => {
+			t.plan(c.shouldNotify ? 3 : 1);
 
-	t.test('parent subscribe/notify works', (t) => {
-		setup();
-		t.plan(3);
-		s.subscribe([ 'a' ], () => { t.ok(true, 'was notified'); });
-		s.set([ 'a', 'b' ], 'b');
-		s.set([ 'a', 'b' ], 'c');
-		s.set([ 'a', 'c' ], 'c');
-		s.set([ 'b', 'c' ], 'd');
+			setup();
+			s.subscribe(c.subscribe, () => {
+				t.ok(true, 'was notified');
+			});
+			s.set(c.set, 'a');
+			s.set(c.set, 'b');
+			t.ok(true, 'finished');
+		});
 	});
 
 	t.test('unsubscribe works', (t) => {
@@ -88,19 +93,6 @@ test('Namespace', (t) => {
 
 		s.subscribe([ 'a', 'b' ], f);
 		s.set([ 'a', 'b' ], 'b');
-	});
-
-	t.test('subscribing to a subkey works', (t) => {
-		setup();
-		t.plan(2);
-
-		var f = () => {
-			t.ok(true, 'was notified');
-		};
-
-		s.subscribe([ 'a', 'b' ], f);
-		s.set([ 'a' ], { 'b': 1 });
-		s.set([ 'a' ], { 'b': 2 });
 	});
 });
 

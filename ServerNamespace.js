@@ -55,7 +55,7 @@ class ServerNamespace extends Namespace {
 
 		this._keyArity = keyArity;
 		this._saveArity = saveArity;
-		this._serverContainer = server;
+		this._serverContainer = serverContainer;
 
 		// _local is locally-modified data (initialized by `super`).
 		// _remote is server data.
@@ -135,13 +135,22 @@ class ServerNamespace extends Namespace {
 	 */
 	action(key, action, data) {
 		// Hard-coded special case
-		if (action == 'save') { this._save(key); }
-		else { this._action(action, key, data); }
+		if (action == 'save') { return this._save(key); }
+		else { return this._action(action, key, data); }
 	}
 
 	_action(key, action, data) {
 		// TODO: handle statemutations
-		return this._serverContainer.action(this.name, key, action, m.toJs(data));
+		return this._serverContainer.action(this.name, key, action, m.toJs(data)).then((result) => {
+			if (result.$set) {
+				result.$set.forEach((s) => {
+					this._remote = emptyAssocIn(this._remote, s.key, m.toClj(s.value));
+				});
+			}
+			if (result.$return) {
+				return result.$return;
+			}
+		});
 	}
 
 	_save(key) {
@@ -169,7 +178,8 @@ class ServerNamespace extends Namespace {
 		this._saving = m.assoc(this._saving, keys_to_save, true);
 
 		return this._action(key, 'save', m.toJs(local_data)).then((newValue) => {
-			// Empty stage store – remote store should have been updated from under us.
+			// Empty stage store – remote store should have been updated from
+			// under us.
 			this._stage = emptyAssocIn(this._stage, keys_to_save, null);
 			this._saving = m.assoc(this._saving, keys_to_save, false);
 			this._notify(keys_to_save);
@@ -217,7 +227,7 @@ class ServerNamespace extends Namespace {
 	}
 
 	_loaderKey(key) {
-		if (m.count(key) < this._keyArity) { throw("Load is not specific enough; expecting a composite key of " + this._keyArity + " elements, but got " + m.count(keys) + " instead (" + key + ")"; }
+		if (m.count(key) < this._keyArity) { throw new Error("Load is not specific enough; expecting a composite key of " + this._keyArity + " elements, but got " + m.count(keys) + " instead (" + key + ")"); }
 
 		return m.into(m.vector(), m.take(this._keyArity, key));
 	}
