@@ -24,17 +24,18 @@ import m from 'mori';
  *     dependencies(storage: Storage): set<IKey>;
  *     get(storage: Storage): any;
  *     set(storage: Storage, value: any);
+ *     materialize(storage: Storage): any[];
  *     isLoading(storage: Storage);
  *     isError(storage: Storage);
- *     subscribe(storage: Storage, ()=>null);
- *     unsubscribe(storage: Storage, ()=>null);
+ *     subscribe(storage: Storage, () => null);
+ *     unsubscribe(storage: Storage, () => null);
  * }
  */
 
 /**
  * Whether `e` abides by IKey (roughly).
  */
-function isKey(e) {
+export function isKey(e) {
 	return typeof e != 'string' &&
 			typeof e != 'boolean' &&
 			typeof e != 'number' &&
@@ -64,12 +65,12 @@ class Key {
 	/**
 	 * Returns an array of key elements, but with nested keys "materialized",
 	 * i.e. their actual values filled in. E.g., if 'c' = 1,
-	 * Key([ 'a', 'b', Key([ 'c' ]) ])._materialize() = [ 'a', 'b', 1 ].
+	 * Key([ 'a', 'b', Key([ 'c' ]) ]).materialize() = [ 'a', 'b', 1 ].
 	 *
 	 * If an element could not be materialized, perhaps because one of its
 	 * dependencies is loading or otherwise, this function returns null.
 	 */
-	_materialize(storage) {
+	materialize(storage) {
 		var elements = [];
 		for (var i = 0; i < this.elements.length; i++) {
 			if (!isKey(this.elements[i])) {
@@ -90,7 +91,7 @@ class Key {
 	 * Actually get this key in the given storage.
 	 */
 	get(storage) {
-		var element = this._materialize(storage);
+		var element = this.materialize(storage);
 		if (!element) { return null; }
 		return storage.get(element);
 	}
@@ -99,7 +100,7 @@ class Key {
 	 * Set the key in the given storage.
 	 */
 	set(storage, value) {
-		var element = this._materialize(storage);
+		var element = this.materialize(storage);
 		if (!element) { throw 'Cannot set an empty key'; }
 		return storage.set(element, value);
 	}
@@ -125,8 +126,8 @@ class Key {
 
 		// If all of the dependent keys are in a good state, check the current
 		// key.
-		if (this._materialize(storage)) {
-			return storage[x](this._materialize(storage));
+		if (this.materialize(storage)) {
+			return storage[x](this.materialize(storage));
 		}
 
 		// If we couldn't materialize, this is the best we can do...
@@ -148,9 +149,9 @@ class Key {
 			}
 		}
 
-		if (this._materialize(storage)) {
+		if (this.materialize(storage)) {
 			// Include the current key in the list of dependencies.
-			dependencies = m.conj(dependencies, this._materialize(storage));
+			dependencies = m.conj(dependencies, this.materialize(storage));
 		}
 
 		return dependencies;
@@ -285,13 +286,12 @@ class KeyOption {
 
 	_isX(x, storage) {
 		for (var i = 0; i < this.options.length; i++) {
-			if (isKey(this.options[i])) {
-				if (!this.options[i][x](storage)) { return false; }
+			if (isKey(this.options[i]) && !this.options[i][x](storage)) {
+				return false;
 			}
 		}
 		return true;
 	}
-
 }
 
 /**

@@ -3,10 +3,10 @@ import Namespace from './Namespace';
 import ServerNamespace from './ServerNamespace';
 import ReadOnlyServerNamespace from './ReadOnlyServerNamespace';
 import Server from './Server';
-
 import key from './key';
 import action from './action';
-import EventSystem from './EventSystem';
 import { SprintComponent, wrap } from './component';
+
+import EventSystem from './EventSystem';
 
 export { key as k, action as a, Server, Storage, Namespace, ServerNamespace, ReadOnlyServerNamespace, SprintComponent, wrap, EventSystem };

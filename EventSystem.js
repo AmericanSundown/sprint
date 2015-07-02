@@ -1,6 +1,8 @@
 import B from 'bluebird';
 import m from 'mori';
 
+// TODO: refactor
+
 class EventSystem {
 	constructor() {
 		this.actions = [];
