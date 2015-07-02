@@ -48,7 +48,7 @@ class Namespace {
 	 * @param {*[]} key
 	 */
 	get(key) {
-		return m.getIn(this._local, key);
+		return emptyGetIn(this._local, key);
 	}
 
 	/**

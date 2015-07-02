@@ -23,6 +23,14 @@ export function emptyUpdateIn(obj, keys, fn) {
 }
 
 /**
+ * Same as getIn, but works with empty keys.
+ */
+export function emptyGetIn(obj, keys) {
+	if (!m.count(keys)) { return value; }
+	return m.getIn(obj, keys);
+}
+
+/**
  * Merge two POJOs
  * @param {Object} a
  * @param {Object} b

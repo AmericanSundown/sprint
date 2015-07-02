@@ -1,6 +1,6 @@
 import m from 'mori';
 import Namespace from './Namespace';
-import { emptyAssocIn, isObjOrMap } from './utils';
+import { emptyAssocIn, emptyGetIn, isObjOrMap } from './utils';
 
 const STATE_LOADING = 'loading';
 const STATE_LOADED = 'loaded';
@@ -83,15 +83,15 @@ class ServerNamespace extends Namespace {
 		// pass it through; if they return an object, merge it in, with local
 		// taking precedence over stage, taking precedence over remote.
 		var data = null;
-		if ((local = m.getIn(this._local, key)) !== null) {
+		if ((local = emptyGetIn(this._local, key)) !== null) {
 			if (!isObjOrMap(local)) { return local; }
 			data = local;
 		}
-		if ((stage = m.getIn(this._stage, key)) !== null) {
+		if ((stage = emptyGetIn(this._stage, key)) !== null) {
 			if (!data && !isObjOrMap(stage)) { return stage; }
 			data = m.merge(stage, data);
 		}
-		if ((remote = m.getIn(this._remote, key)) !== null) {
+		if ((remote = emptyGetIn(this._remote, key)) !== null) {
 			if (!data && !isObjOrMap(remote)) { return remote; }
 			data = m.merge(remote, data);
 		}
@@ -149,7 +149,7 @@ class ServerNamespace extends Namespace {
 		if (m.count(key) < this._saveArity) { throw "Save is not specific enough"; }
 
 		var keys_to_save = m.take(this._saveArity, key),
-			local_data = m.getIn(this._local, keys_to_save) || {};
+			local_data = emptyGetIn(this._local, keys_to_save) || {};
 
 		if (m.get(this._saving, keys_to_save)) { throw "Can't save while another save is in progress"; }
 
@@ -176,8 +176,8 @@ class ServerNamespace extends Namespace {
 		}, (err) => {
 			// Something went wrong, so abort: put stage store back into local,
 			// and empty it.
-			var stage = m.getIn(this._stage, keys_to_save),
-				local = m.getIn(this._local, keys_to_save);
+			var stage = emptyGetIn(this._stage, keys_to_save),
+				local = emptyGetIn(this._local, keys_to_save);
 			var new_local = null;
 			if (isObjOrMap(stage) && isObjOrMap(local)) { new_local = m.merge(stage, local); }
 			else if (local !== null) { new_local = local; }
