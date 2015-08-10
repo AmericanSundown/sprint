@@ -7,6 +7,7 @@ class Storage {
 		var _passthrough = (call) => {
 			return (a, b, c, d) => {
 				var ns = m.get(this._namespaces, m.first(a));
+				if (!ns) { throw "No namespace: '" + m.first(a) + "' registered with this storage object."}
 				a = m.rest(a);
 				return ns[call].call(ns, a, b, c, d);
 			};
