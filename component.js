@@ -64,6 +64,9 @@ export function wrap(Component, options) {
 		}
 
 		shouldComponentUpdate(nextProps, nextState) {
+			// disable update checking until we come up with a better state checker
+			return true;
+
 			// Only check state – props updates state in componentWillReceiveProps.
 			for (var k in nextState) {
 				if (nextState.hasOwnProperty(k)) {
