@@ -14,7 +14,7 @@ class Namespace {
 
 	set(keys, value) {
 		var v = keys.indexOf('marketing_links1') != -1 ? value : m.toClj(value); // straight up hack because mori isn't working with obj w/ a key of "uc"
-		this._local = emptyAssocIn(this._local, keys, m.toClj(value));
+		this._local = emptyAssocIn(this._local, keys, m.toClj(v));
 		this._notify(keys);
 	}
 
