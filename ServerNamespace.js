@@ -171,6 +171,7 @@ class ServerNamespace extends Namespace {
 
 		}, () => {
 			this._loading = m.assoc(this._loading, keys_to_load, STATE_ERROR);
+			this._notify(keys_to_load);
 		});
 	}
 
