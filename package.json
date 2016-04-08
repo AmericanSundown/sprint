@@ -21,7 +21,7 @@
     "bluebird": "2.9.24",
     "component-emitter": "1.1.2",
     "mori": "0.3.2",
-    "react": "^0.13.2",
+    "react": "0.14.7",
     "superagent": "1.2.0"
   },
   "devDependencies": {
