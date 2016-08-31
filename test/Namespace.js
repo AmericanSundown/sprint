@@ -1,6 +1,6 @@
 import test from 'tape';
 import m from 'mori';
-import Namespace from '../Namespace';
+import Namespace from '../src/Namespace';
 
 test('Namespace', (t) => {
 	var s;

@@ -1,5 +1,5 @@
 import test from 'tape';
-import k from '../key';
+import k from '../src/key';
 import m from 'mori';
 
 test("key functions", (t) => {

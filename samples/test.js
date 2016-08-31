@@ -1,5 +1,5 @@
 // this part belongs in BlackberrySelector
-import { Server, ServerNamespace, Storage, EventSystem, SprintComponent, wrap, k, a } from '../index';
+import { Server, ServerNamespace, Storage, EventSystem, SprintComponent, wrap, k, a } from '../src/index';
 import React from 'react';
 import B from 'bluebird';
 

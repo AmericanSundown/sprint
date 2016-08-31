@@ -1,6 +1,6 @@
 import m from 'mori';
-import ServerNamespace from '../ServerNamespace';
-import Server from '../Server';
+import ServerNamespace from '../src/ServerNamespace';
+import Server from '../src/Server';
 
 var server = new Server('https://dashboard.branch.io/sprint');
 
